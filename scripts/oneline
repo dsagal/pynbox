@@ -1,0 +1,23 @@
+#!/usr/bin/env python -u
+"""
+Reads lines from stdin and outputs them on a single line, with each new line overwriting the
+previous one. Useful for watching progress, e.g. of builds, without filling up the screen.
+"""
+
+import sys, curses
+
+curses.setupterm()
+columns = curses.tigetnum("cols")
+rewind = curses.tigetstr("cr") + curses.tigetstr("el")
+
+while True:
+  line = sys.stdin.readline()
+  if not line:
+    break
+  line = line.strip()
+  if len(line) <= columns:
+    sys.stdout.write(rewind + line)
+  else:
+    sys.stdout.write(rewind + "..." + line[-columns + 3:])
+
+sys.stdout.write("\n")

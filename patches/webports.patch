@@ -1,0 +1,156 @@
+diff --git a/ports/python/build.sh b/ports/python/build.sh
+index 29d12af..37c39b6 100644
+--- a/ports/python/build.sh
++++ b/ports/python/build.sh
+@@ -42,7 +42,9 @@ ConfigureStep() {
+     export ac_cv_func_wait3=no
+     export ac_cv_func_wait4=no
+   fi
+-  EnableCliMain
++  if [ -z "${NACL_BARE:=}" ]; then
++    EnableCliMain
++  fi
+   EnableGlibcCompat
+   DefaultConfigureStep
+   if [ "${NACL_LIBC}" = "newlib" ]; then
+diff --git a/ports/python/config.site b/ports/python/config.site
+index dfe717a..2d272b1 100644
+--- a/ports/python/config.site
++++ b/ports/python/config.site
+@@ -15,3 +15,8 @@ ac_cv_func_getnameinfo=no
+ # TODO(sbc): Remove this once uname() gets added to libnacl.
+ # https://code.google.com/p/nativeclient/issues/detail?id=3997
+ ac_cv_func_uname=yes
++
++# Configure detects waitpid as unimplemented and marks as unavailable. That
++# causes python to omit os.waitpid, which causes problems. It's better to
++# include it and let it fail when used, just like wait4 and other functions.
++ac_cv_func_waitpid=yes
+diff --git a/ports/python/nacl.patch b/ports/python/nacl.patch
+index d817383..91b596c 100644
+--- a/ports/python/nacl.patch
++++ b/ports/python/nacl.patch
+@@ -573,7 +573,18 @@ diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
+      }
+      PyMem_Free(path);
+      Py_INCREF(Py_None);
+-@@ -3430,7 +3441,7 @@ posix_spawnv(PyObject *self, PyObject *args)
++@@ -3127,6 +3138,10 @@ done:
++ 
++ /* Process operations */
++ 
+++#ifdef _exit
+++#undef _exit
+++#endif
+++
++ PyDoc_STRVAR(posix__exit__doc__,
++ "_exit(status)\n\n\
++ Exit to the system with specified status, without normal exit processing.");
++@@ -3430,7 +3445,7 @@ posix_spawnv(PyObject *self, PyObject *args)
+      }
+      argvlist[argc] = NULL;
+  
+@@ -582,7 +593,7 @@ diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
+      Py_BEGIN_ALLOW_THREADS
+      spawnval = spawnv(mode, path, argvlist);
+      Py_END_ALLOW_THREADS
+-@@ -3575,7 +3586,7 @@ posix_spawnve(PyObject *self, PyObject *args)
++@@ -3575,7 +3590,7 @@ posix_spawnve(PyObject *self, PyObject *args)
+      }
+      envlist[envc] = 0;
+  
+@@ -591,7 +602,7 @@ diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
+      Py_BEGIN_ALLOW_THREADS
+      spawnval = spawnve(mode, path, argvlist, envlist);
+      Py_END_ALLOW_THREADS
+-@@ -6370,7 +6381,7 @@ posix_readlink(PyObject *self, PyObject *args)
++@@ -6370,7 +6385,7 @@ posix_readlink(PyObject *self, PyObject *args)
+      n = readlink(path, buf, (int) sizeof buf);
+      Py_END_ALLOW_THREADS
+      if (n < 0)
+@@ -600,7 +611,7 @@ diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
+  
+      PyMem_Free(path);
+      v = PyString_FromStringAndSize(buf, n);
+-@@ -6616,7 +6627,7 @@ posix_open(PyObject *self, PyObject *args)
++@@ -6616,7 +6631,7 @@ posix_open(PyObject *self, PyObject *args)
+      PyErr_Clear();
+  #endif
+  
+@@ -609,7 +620,7 @@ diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
+                            Py_FileSystemDefaultEncoding, &file,
+                            &flag, &mode))
+          return NULL;
+-@@ -6625,7 +6636,7 @@ posix_open(PyObject *self, PyObject *args)
++@@ -6625,7 +6640,7 @@ posix_open(PyObject *self, PyObject *args)
+      fd = open(file, flag, mode);
+      Py_END_ALLOW_THREADS
+      if (fd < 0)
+@@ -618,7 +629,7 @@ diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
+      PyMem_Free(file);
+      return PyInt_FromLong((long)fd);
+  }
+-@@ -9431,6 +9442,11 @@ all_ins(PyObject *d)
++@@ -9431,6 +9446,11 @@ all_ins(PyObject *d)
+      if (ins(d, "P_TILDE", (long)P_TILDE)) return -1;
+      if (ins(d, "P_UNRELATED", (long)P_UNRELATED)) return -1;
+      if (ins(d, "P_DEBUGDESC", (long)P_DEBUGDESC)) return -1;
+@@ -666,36 +677,43 @@ diff --git a/Modules/pwdmodule.c b/Modules/pwdmodule.c
+ diff --git a/Modules/python.c b/Modules/python.c
+ --- a/Modules/python.c
+ +++ b/Modules/python.c
+-@@ -6,6 +6,20 @@
++@@ -6,6 +6,29 @@
+  #include <floatingpoint.h>
+  #endif
+  
+ +#ifdef __native_client__
+-+#ifdef __arm__
+-+#define DATA_FILE "_platform_specific/arm/pydata.tar"
+-+#elif defined __i386__
+-+#define DATA_FILE "_platform_specific/i686/pydata.tar"
+-+#elif defined __x86_64__
+-+#define DATA_FILE "_platform_specific/x86_64/pydata.tar"
+-+#elif defined __pnacl__
+-+#define DATA_FILE "pydata.tar"
+-+#else
+-+#error "Unknown arch"
+-+#endif
+++#include <sys/utsname.h>
+++
+++// Stubs for functions that are only available through PPAPI.
+++int spawnv(int mode, const char* path, char *const argv[]) {
+++  errno = ENOSYS;
+++  return -1;
+++}
+++
+++int spawnve(int mode, const char* path,
+++            char *const argv[], char *const envp[]) {
+++  errno = ENOSYS;
+++  return -1;
+++}
+++
+++// Dummy implementation of uname, like nacl_io provides, for use without nacl_io.
+++int uname(struct utsname *buf) {
+++  memset(buf, 0, sizeof(struct utsname));
+++  snprintf(buf->sysname, _UTSNAME_LENGTH, "NaCl");
+++  return 0;
+++}
+ +#endif
+ +
+  int
+  main(int argc, char **argv)
+  {
+-@@ -20,5 +34,11 @@ main(int argc, char **argv)
++@@ -20,5 +43,9 @@ main(int argc, char **argv)
+  	m = fpgetmask();
+  	fpsetmask(m & ~FP_X_OFL);
+  #endif
+ +#ifdef __native_client__
+ +	setvbuf(stdout, NULL, _IOLBF, 0);
+ +	setvbuf(stdin, NULL, _IOLBF, 0);
+-+	if (nacl_startup_untar(argv[0], DATA_FILE, "/"))
+-+		return -1;
+ +#endif
+  	return Py_Main(argc, argv);
+  }
