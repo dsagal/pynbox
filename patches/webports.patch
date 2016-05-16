@@ -1,3 +1,21 @@
+diff --git a/build_tools/common.sh b/build_tools/common.sh
+index 9666049..f04e5db 100644
+--- a/build_tools/common.sh
++++ b/build_tools/common.sh
+@@ -1114,6 +1114,13 @@ DefaultPythonModuleBuildStep() {
+   export CXXFLAGS="${NACLPORTS_CPPFLAGS} ${NACLPORTS_CXXFLAGS}"
+   export LDFLAGS="${NACLPORTS_LDFLAGS} ${NACLPORTS_LIBS}"
+   export LIBS="${NACLPORTS_LIBS}"
++
++  if [ "${NACL_SHARED}" = "1" ]; then
++    export NACL_PORT_BUILD=${1:-host}
++    export CFLAGS="$CFLAGS -fPIC"
++    export LDSHARED="$CC -shared -fPIC"
++  fi
++
+   LogExecute "${NACL_HOST_PYTHON}" setup.py ${NACL_PYSETUP_ARGS} \
+     install "--prefix=${NACL_DEST_PYROOT}"
+   MakeDir "${DEST_PYTHON_OBJS}/${PACKAGE_NAME}"
 diff --git a/ports/python/build.sh b/ports/python/build.sh
 index 29d12af..37c39b6 100644
 --- a/ports/python/build.sh

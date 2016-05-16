@@ -91,6 +91,18 @@ run_oneline() {
   return $result
 }
 
+# Apply a patch only if it hasn't yet been applied. The first argument is the
+# patch file, the rest are options to the patch command (e.g. -p1).
+apply_patch() {
+  patch=$1
+  shift
+  if patch --dry-run -R "$@" < $patch >/dev/null; then
+    echo "Skipping previously applied patch: $patch"
+  else
+    run patch -N "$@" < $patch
+  fi
+}
+
 # Copy file or directory only if the source is newer than the target.
 copy_file() { rsync -Lv --chmod=a-w --update "$@" | ( grep -Ev '^(sent |total size |$)' || true ); }
 copy_dir()  { rsync -rlv --safe-links --chmod=a-w --update "$@" | ( grep -Ev '^(sent |total size |$)' || true ); }

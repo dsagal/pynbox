@@ -79,9 +79,7 @@ if [ "$BUILD_NACL_SRC" = "yes" ]; then
   pushdir "$NACL_DIR"
 
     # Workaround for only having XCode command-line tools without full SDK (which is fine)
-    if patch -N --dry-run --quiet < $ROOT/patches/SConstruct.patch >/dev/null; then
-      run patch -N < $ROOT/patches/SConstruct.patch
-    fi
+    apply_patch $ROOT/patches/SConstruct.patch
 
     run_oneline ./scons ${VERBOSE:+--verbose} platform=$ARCHD sel_ldr
 
@@ -118,11 +116,13 @@ popdir
 header "--- build python webport"
 pushdir "$WEBPORTS_DIR"
 
-  # Apply out patch to the Python webport. (This includes patching the webport's
+  # Apply our patch to the Python webport. (This includes patching the webport's
   # own patch file, which makes for a hard-to-read diff of a diff. Sorry.)
-  if ! patch --dry-run -p1 -R < $ROOT/patches/webports.patch >/dev/null; then
-    run patch -p1 -N < $ROOT/patches/webports.patch
-  fi
+  apply_patch $ROOT/patches/webports.patch -p1
+
+  # In order to build Python's lxml, we have our own port for it, added by this patch.
+  apply_patch $ROOT/patches/webports-lxml.patch -p1
+
 
   [ "$BUILD_PYTHON_FORCE" = "yes" ] && FORCE="1" || FORCE="0"
   # NACL_BARE=1 is a variable added by our own patch, to omit certain

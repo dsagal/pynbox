@@ -1,0 +1,99 @@
+commit eb399a39baef05c3f9053de1757fcc7bd17a7ecf
+Author: Dmitry S <dsagal+git@gmail.com>
+Date:   Fri May 13 17:20:37 2016 -0400
+
+    Added libxslt and python_modules/lxml ports, and updated libxml2.
+
+diff --git a/ports/libxml2/pkg_info b/ports/libxml2/pkg_info
+index dd30de1..fc5bf6c 100644
+--- a/ports/libxml2/pkg_info
++++ b/ports/libxml2/pkg_info
+@@ -1,5 +1,5 @@
+ NAME=libxml2
+-VERSION=2.7.8
+-URL=ftp://xmlsoft.org/libxml2/libxml2-2.7.8.tar.gz
++VERSION=2.9.3
++URL=ftp://xmlsoft.org/libxml2/libxml2-2.9.3.tar.gz
+ LICENSE=MIT
+-SHA1=859dd535edbb851cc15b64740ee06551a7a17d40
++SHA1=0301ce933637e0ceda049047dbefd18714f59b6e
+diff --git a/ports/libxslt/build.sh b/ports/libxslt/build.sh
+new file mode 100644
+index 0000000..6fc5057
+--- /dev/null
++++ b/ports/libxslt/build.sh
+@@ -0,0 +1,5 @@
++# Copyright (c) 2011 The Native Client Authors. All rights reserved.
++# Use of this source code is governed by a BSD-style license that can be
++# found in the LICENSE file.
++
++EXTRA_CONFIGURE_ARGS="--with-crypto=no"
+diff --git a/ports/libxslt/pkg_info b/ports/libxslt/pkg_info
+new file mode 100644
+index 0000000..b7c80a9
+--- /dev/null
++++ b/ports/libxslt/pkg_info
+@@ -0,0 +1,6 @@
++NAME=libxslt
++VERSION=1.1.29
++URL=ftp://xmlsoft.org/libxslt/libxslt-1.1.29-rc2.tar.gz
++LICENSE=MIT
++DEPENDS=(libxml2)
++SHA1=80afef8606ddf202659ae2d7e781848a0b7c07aa
+diff --git a/ports/python_modules/lxml/build.sh b/ports/python_modules/lxml/build.sh
+new file mode 100644
+index 0000000..cb46ec0
+--- /dev/null
++++ b/ports/python_modules/lxml/build.sh
+@@ -0,0 +1,15 @@
++# Copyright (c) 2014 The Native Client Authors. All rights reserved.
++# Use of this source code is governed by a BSD-style license that can be
++# found in the LICENSE file.
++
++BuildStep() {
++  DefaultPythonModuleBuildStep
++}
++
++InstallStep() {
++  DefaultPythonModuleInstallStep
++}
++
++ConfigureStep() {
++  return
++}
+diff --git a/ports/python_modules/lxml/nacl.patch b/ports/python_modules/lxml/nacl.patch
+new file mode 100644
+index 0000000..b880562
+--- /dev/null
++++ b/ports/python_modules/lxml/nacl.patch
+@@ -0,0 +1,17 @@
++diff --git a/setupinfo.py b/setupinfo.py
++--- a/setupinfo.py
+++++ b/setupinfo.py
++@@ -287,13 +287,6 @@ def cflags(static_cflags):
++             if not possible_cflag.startswith('-I'):
++                 result.append(possible_cflag)
++ 
++-    if sys.platform in ('darwin',):
++-        for opt in result:
++-            if 'flat_namespace' in opt:
++-                break
++-        else:
++-            result.append('-flat_namespace')
++-
++     return result
++ 
++ def define_macros():
+diff --git a/ports/python_modules/lxml/pkg_info b/ports/python_modules/lxml/pkg_info
+new file mode 100644
+index 0000000..ba001db
+--- /dev/null
++++ b/ports/python_modules/lxml/pkg_info
+@@ -0,0 +1,7 @@
++NAME=lxml
++VERSION=3.6.0
++URL=https://pypi.python.org/packages/11/1b/fe6904151b37a0d6da6e60c13583945f8ce3eae8ebd0ec763ce546358947/lxml-3.6.0.tar.gz
++LICENSE=BSD
++DEPENDS=(python-host libxml2 libxslt)
++SHA1=62c6cf15dba26fc9f0d40c75621f07e03e1bc4f5
++DISABLED_TOOLCHAIN=(emscripten)
