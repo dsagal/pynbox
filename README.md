@@ -75,3 +75,11 @@ The output it produces is in the `./build/` directory. It also prepares
 `./build/sandbox_root/` to serve as the filesystem root for the sandbox. A
 separate short script `./sandbox_run` helps run binaries in the sandbox, and `./pynbox` runs the
 Python interpreter in the sandbox.
+
+Notes
+-----
+NativeClient encompasses PNaCl (portable native client) and just NaCl. These differ in toolchains used to build code, and produce .pexe and .nexe files respectively. The idea is that .nexe is architecture-specific, and .pexe is more portable: it can be translated to a suitable .nexe file on the fly.
+
+There is a hitch, however: shared libraries are only supported by the glibc toolchain which builds architecture-specific .nexe files directly. We need shared libraries, in particular, to allow Python to load C extension modules.
+
+Loading shared libraries uses "libdl.so" library. This library isn't part of NativeClient source. It is downloaded as part of an architecture specific tgz archive (for each architecture). It seems to have some bugs (or super-weird behavior), in particular opening "/lib/foo" translates to "/foo", while "/./lib/foo" works. This is special for the "/lib" path, so we avoid it by putting libraries under "/usr/lib".

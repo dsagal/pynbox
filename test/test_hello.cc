@@ -1,4 +1,5 @@
 #include <dirent.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -52,9 +53,9 @@ string test_filesystem() {
 
   struct dirent *entry;
   while ((entry = readdir(dir)) != 0) {
-    if (strcmp(entry->d_name, "usr") == 0) {
+    if (strcmp(entry->d_name, "home") == 0) {
       closedir(dir);
-      return "Unexpected entry /usr";
+      return "Unexpected entry /home";
     }
   }
   closedir(dir);
@@ -81,6 +82,15 @@ string test_no_fork() {
   return "";
 }
 
+string test_dlopen(const char *path) {
+  void *p = dlopen(path, RTLD_LAZY);
+  if (p == 0) {
+    return string("dlopen failed with: ") + dlerror();
+  }
+  dlclose(p);
+  return "";
+}
+
 #ifndef __native_client__
 // This lets us build without native client (mainly to see how all tests will fail).
 int umount(const char *path) { return unmount(path, 0); }
@@ -96,6 +106,8 @@ int main() {
   TEST(test_missing_syscall(umount("/python/bin")));
   int fd[2] = {};
   TEST(test_missing_syscall(pipe(fd)));
+  TEST(test_dlopen("/usr/lib/libz.so.1"));
+  TEST(test_dlopen("libz.so.1"));
 
   // For us, it would be better if chmod always failed (and generally support read-only
   // filesystem). But it succeeds, limiting the mode to just the RWX user flags (see NaClMapMode()

@@ -52,9 +52,9 @@ class TestNaclSandbox(unittest.TestCase):
 
   def test_filesystem_root(self):
     root_files = os.listdir("/")
-    self.assertIn("lib", root_files)
+    self.assertIn("usr", root_files)
     self.assertIn("python", root_files)
-    self.assertNotIn("usr", root_files)
+    self.assertNotIn("home", root_files)
     self.assertNotIn("etc", root_files)
 
     python_files = os.listdir("/python")

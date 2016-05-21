@@ -7,6 +7,7 @@
 # Settings for script robustness.
 set -o pipefail  # trace ERR through pipes
 set -o nounset   # same as set -u : treat unset variables as an error
+set -o errtrace  # same as set -E: inherit ERR trap in functions
 trap 'echo Error in line "${BASH_SOURCE}":"${LINENO}"; exit 1' ERR
 trap 'echo "${ColorReset}Exiting on interrupt"; exit 1' INT
 
@@ -15,21 +16,24 @@ LOG=`pwd`/build/build.log
 ONELINE=`pwd`/scripts/oneline
 
 # Variables controlled by command-line options.
-BUILD_SYNC=yes
+BUILD_SYNC=no
 BUILD_NACL_SRC=no
-BUILD_PYTHON_FORCE=no
+BUILD_PYTHON_FORCE=0
+INSTALL_PYTHON_MODULE=
 VERBOSE=
 
 process_options() {
   while [[ $# > 0 ]]; do
     case "$1" in
-      --nosync) BUILD_SYNC=no
+      --sync) BUILD_SYNC=yes
         ;;
       --nacl_src) BUILD_NACL_SRC=yes
         ;;
-      --rebuild_python) BUILD_PYTHON_FORCE=yes
+      --rebuild_python) BUILD_PYTHON_FORCE=1
         ;;
       -v) VERBOSE=yes
+        ;;
+      install) INSTALL_PYTHON_MODULE="$2"; shift
         ;;
       -h|*) cat <<EOF
 Usage: $0 [options]
@@ -37,12 +41,14 @@ Build everything needed to run Python within NativeClient (NaCl) sandbox.
 
   -h          Display this help and exit
   -v          Verbose mode
-  --nosync    Skip "gclient sync" steps
+  --sync      Run "gclient sync" steps
   --nacl_src  Don't skip the building of NaCl tools from sources (they are not
               needed unless you need to work on the NaCl tools themselves).
   --rebuild_python
               Force-rebuild python webport (useful if you changed its code,
               since the build does not pick up changes automatically).
+  install <module>
+              Build and install a python module for which there is a webport.
 EOF
         exit 2;
         ;;
