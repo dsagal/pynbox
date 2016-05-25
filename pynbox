@@ -1,9 +1,0 @@
-#!/bin/bash
-
-if [ $# -eq 0 ]; then
-  # Sandboxed python doesn't detect if it has a tty, so if called without arguments (for
-  # interactive REPL), add an explicit flag to make it interactive.
-  set -- -i
-fi
-
-exec `dirname "$0"`/sandbox_run /python/bin/python2.7.nexe "$@"

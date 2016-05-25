@@ -14,14 +14,19 @@ Quick Start
 ```bash
 ./build.sh
 ```
-This fetches and builds the necessary software, and populates the `./build/` directory, including `./build/sandbox_root/`, which serves as the filesystem root within the sandbox.
+This fetches and builds the necessary software, and populates the `./build/` directory, including `./build/root/`, which serves as the filesystem root within the sandbox.
 
 ```bash
-./pynbox -c 'print "Hello world"'
-./pynbox test/test_nacl.py
-./sandbox_run test/test_hello.nexe
+./build/run python -c 'print "Hello world"'
+./build/run python test/test_nacl.py
+./build/run test/test_hello.nexe
 ```
-Note that to run any python program, that program and all the modules it requires must be placed somewhere under `./build/sandbox_root/`.
+Note that to run any python program, that program and all the modules it requires must be placed somewhere under `./build/root/`.
+
+```bash
+./build.sh install lxml
+```
+Build and install python package `lxml`.
 
 Background
 ----------
@@ -68,13 +73,18 @@ documentation. The script supports some options, available using `./build.sh
 
 Some tests are included and are run by `build.sh`.
 
+You can build a webport of a python package and install into the `./build/` directory using `./build.sh install <package>`, e.g.
+```bash
+./build.sh install lxml
+```
+
 The software it includes is `depot_tools`, `nacl_sdk`, `webports` (specifically
 Python and its dependencies), and optionally NaCl source code.
 
 The output it produces is in the `./build/` directory. It also prepares
-`./build/sandbox_root/` to serve as the filesystem root for the sandbox. A
-separate short script `./sandbox_run` helps run binaries in the sandbox, and `./pynbox` runs the
-Python interpreter in the sandbox.
+`./build/root/` to serve as the filesystem root for the sandbox. A
+separate short script `./build/run` helps run binaries in the sandbox, with `./build/run python`
+running the Python interpreter in the sandbox.
 
 Notes
 -----

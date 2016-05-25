@@ -106,7 +106,7 @@ int main() {
   TEST(test_missing_syscall(umount("/python/bin")));
   int fd[2] = {};
   TEST(test_missing_syscall(pipe(fd)));
-  TEST(test_dlopen("/usr/lib/libz.so.1"));
+  TEST(test_dlopen("/slib/libz.so.1"));
   TEST(test_dlopen("libz.so.1"));
 
   // For us, it would be better if chmod always failed (and generally support read-only

@@ -12,7 +12,7 @@ trap 'echo Error in line "${BASH_SOURCE}":"${LINENO}"; exit 1' ERR
 trap 'echo "${ColorReset}Exiting on interrupt"; exit 1' INT
 
 # Destination for a copy of all stdout and stderr.
-LOG=`pwd`/build/build.log
+LOG=`pwd`/build.log
 ONELINE=`pwd`/scripts/oneline
 
 # Variables controlled by command-line options.

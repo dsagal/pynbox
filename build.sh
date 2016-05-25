@@ -17,6 +17,8 @@ DEPOT_TOOLS_PATH=$ROOT/software/depot_tools
 NACL_SDK_ROOT=$ROOT/software/nacl_sdk/pepper_$NACL_SDK_PEPPER_VERSION
 WEBPORTS_DIR=$ROOT/software/webports/src
 
+SANDBOX_DEST_ROOT=$ROOT/build/root
+
 NACL_TOOLCHAIN_DIR=$NACL_SDK_ROOT/toolchain/${OS_SUBDIR}_${TOOLCHAIN_ARCH}_glibc/${NACL_ARCH}-nacl
 
 if [ -n "$INSTALL_PYTHON_MODULE" ]; then
@@ -27,7 +29,7 @@ if [ -n "$INSTALL_PYTHON_MODULE" ]; then
       NACL_BARE=1 NACL_ARCH=$NACL_ARCH FROM_SOURCE=1 TOOLCHAIN=glibc "python_modules/$INSTALL_PYTHON_MODULE"
 
     SUBDIR="lib/python2.7/site-packages/$INSTALL_PYTHON_MODULE"
-    SANDBOX_DEST_DIR="$ROOT/build/sandbox_root/python/$SUBDIR"
+    SANDBOX_DEST_DIR="$SANDBOX_DEST_ROOT/python/$SUBDIR"
     EXPECTED_DIR="${NACL_TOOLCHAIN_DIR}/usr/${SUBDIR}"
     if [ ! -e "${EXPECTED_DIR}" ]; then
       echo "Installed package not found in $EXPECTED_DIR"
@@ -161,50 +163,59 @@ popdir
 #----------------------------------------------------------------------
 header "--- collect files for sandbox"
 
-mkdir -p build/sandbox_root build/sandbox_root/usr/lib
+SANDBOX_DEST_LIBDIR=$SANDBOX_DEST_ROOT/slib/
+mkdir -p "$SANDBOX_DEST_ROOT" "$SANDBOX_DEST_LIBDIR"
 
 # Copy the outer binaries and libraries needed to run python in the sandbox.
+copy_file $ROOT/scripts/run                             build/run
 copy_file $NACL_SDK_ROOT/tools/sel_ldr_$NACL_ARCH       build/sel_ldr
 copy_file $NACL_SDK_ROOT/tools/irt_core_$NACL_ARCH.nexe build/irt_core.nexe
 copy_file $NACL_TOOLCHAIN_DIR/lib/runnable-ld.so        build/runnable-ld.so
 
 # Copy all of python installation into the sandbox.
-run_oneline copy_dir "$WEBPORTS_DIR"/out/build/python/install_${ARCHD}_glibc/payload/ build/sandbox_root/python
+run_oneline copy_dir "$WEBPORTS_DIR"/out/build/python/install_${ARCHD}_glibc/payload/ "$SANDBOX_DEST_ROOT/python"
 
 # This command shows most of the shared libraries the python binary needs.
-# echo "$NACL_TOOLCHAIN_DIR/bin/objdump -p build/sandbox_root/python/bin/python2.7.nexe | grep NEEDED"
-copy_file $NACL_TOOLCHAIN_DIR/lib/libdl.so.11835d88         build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/lib/libpthread.so.11835d88    build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/lib/libstdc++.so.6            build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/lib/libutil.so.11835d88       build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/lib/libm.so.11835d88          build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/lib/libc.so.11835d88          build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/lib/librt.so.11835d88         build/sandbox_root/usr/lib/
+# echo "$NACL_TOOLCHAIN_DIR/bin/objdump -p $SANDBOX_DEST_ROOT/python/bin/python2.7.nexe | grep NEEDED"
+copy_file $NACL_TOOLCHAIN_DIR/lib/libdl.so.11835d88         "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/lib/libpthread.so.11835d88    "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/lib/libstdc++.so.6            "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/lib/libutil.so.11835d88       "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/lib/libm.so.11835d88          "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/lib/libc.so.11835d88          "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/lib/librt.so.11835d88         "$SANDBOX_DEST_LIBDIR"
 
 # Additional libraries required generally or for some python modules.
-copy_file $NACL_TOOLCHAIN_DIR/lib/libgcc_s.so.1             build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/lib/libcrypt.so.11835d88      build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libz.so.1             build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libncurses.so.5       build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libpanel.so.5         build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libssl.so.1.0.0       build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libbz2.so.1.0         build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libreadline.so        build/sandbox_root/usr/lib/
-copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libcrypto.so.1.0.0    build/sandbox_root/usr/lib/
+copy_file $NACL_TOOLCHAIN_DIR/lib/libgcc_s.so.1             "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/lib/libcrypt.so.11835d88      "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libz.so.1             "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libncurses.so.5       "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libpanel.so.5         "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libssl.so.1.0.0       "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libbz2.so.1.0         "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libreadline.so        "$SANDBOX_DEST_LIBDIR"
+copy_file $NACL_TOOLCHAIN_DIR/usr/lib/libcrypto.so.1.0.0    "$SANDBOX_DEST_LIBDIR"
 
 #----------------------------------------------------------------------
 # Demonstrate and test the building of C++ code for the sandbox.
 #----------------------------------------------------------------------
 # Build a sample C++ program, which tests a few things about the sandbox.
-mkdir -p build/sandbox_root/test
+mkdir -p "$SANDBOX_DEST_ROOT/test"
 echo "Here is how you can build C++ code for use in the sandbox"
 NACL_LIBDIR=$NACL_SDK_ROOT/lib/glibc_${NACL_ARCH}/Release
-run_oneline $NACL_TOOLCHAIN_DIR/bin/g++ -I$NACL_SDK_ROOT/include -L$NACL_LIBDIR -o build/sandbox_root/test/test_hello.nexe test/test_hello.cc -ldl
-run ./sandbox_run test/test_hello.nexe
+run_oneline $NACL_TOOLCHAIN_DIR/bin/g++ -I$NACL_SDK_ROOT/include -L$NACL_LIBDIR -o "$SANDBOX_DEST_ROOT"/test/test_hello.nexe test/test_hello.cc -ldl
+run build/run test/test_hello.nexe
 
 #----------------------------------------------------------------------
 # Run a bunch of python tests under the sandbox.
 #----------------------------------------------------------------------
 # Copy to the sandbox and run a Python test script which tests various things about the sandbox.
-run cp test/test_nacl.py build/sandbox_root/test/test_nacl.py
-run ./pynbox test/test_nacl.py
+run cp test/test_nacl.py "$SANDBOX_DEST_ROOT"/test/test_nacl.py
+run build/run python test/test_nacl.py
+
+#----------------------------------------------------------------------
+# Prepare a package of everything needed to run sandboxed python (all in build directory).
+#----------------------------------------------------------------------
+OUTPUT_BUNDLE=pynbox-${OS_SUBDIR}-${TOOLCHAIN_ARCH}.tgz
+run_oneline tar -s /build/nacl/ -zcvf $OUTPUT_BUNDLE build/
+echo "DONE; output bundle in $ColorBlue$OUTPUT_BUNDLE$ColorReset"

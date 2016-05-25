@@ -1,9 +1,0 @@
-#!/bin/sh
-
-# Change to the build directory.
-cd `dirname "$0"`/build
-
-# If SEL_LDR_FLAGS is in the environment, use that for flags. Otherwise, we'll use our own.
-SEL_LDR_FLAGS=${SEL_LDR_FLAGS-"-l /dev/null"}
-
-exec ./sel_ldr -m sandbox_root/ $SEL_LDR_FLAGS -B irt_core.nexe runnable-ld.so --library-path /usr/lib "$@"
