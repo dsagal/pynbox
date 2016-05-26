@@ -217,5 +217,5 @@ run build/run python test/test_nacl.py
 # Prepare a package of everything needed to run sandboxed python (all in build directory).
 #----------------------------------------------------------------------
 OUTPUT_BUNDLE=pynbox-${OS_SUBDIR}-${TOOLCHAIN_ARCH}.tgz
-run_oneline tar -s /build/nacl/ -zcvf $OUTPUT_BUNDLE build/
+run_oneline tar -s /build/nacl/ --exclude="*.pyc" -zcvf $OUTPUT_BUNDLE build/
 echo "DONE; output bundle in $ColorBlue$OUTPUT_BUNDLE$ColorReset"

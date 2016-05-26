@@ -28,6 +28,13 @@ Note that to run any python program, that program and all the modules it require
 ```
 Build and install python package `lxml`.
 
+Most non-binary packages can be installed using pip (without a need for webports), e.g.
+```bash
+pip install -t build/root/python/lib/python2.7/site-packages/ messytables
+```
+If this installs a dependency with a binary component, it will not work. The test run by `./build.sh`
+may then fail and indicate the package that can't be imported.
+
 Background
 ----------
 
