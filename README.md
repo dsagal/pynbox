@@ -70,7 +70,7 @@ chroot). If populated with all the modules and libraries that Python need, this
 offers a way to run Python with that directory as the
 filesystem root.
 
-What\'s included
+What's included
 ----------------
 
 `./build.sh` script takes care of fetching the needed software, patching what's
@@ -90,7 +90,7 @@ Python and its dependencies), and optionally NaCl source code.
 
 The output it produces is in the `./build/` directory. It also prepares
 `./build/root/` to serve as the filesystem root for the sandbox. A
-separate short script `./build/run` helps run binaries in the sandbox, with `./build/run python`
+script `./build/run` helps run binaries in the sandbox, with `./build/run python`
 running the Python interpreter in the sandbox.
 
 Notes
@@ -99,4 +99,4 @@ NativeClient encompasses PNaCl (portable native client) and just NaCl. These dif
 
 There is a hitch, however: shared libraries are only supported by the glibc toolchain which builds architecture-specific .nexe files directly. We need shared libraries, in particular, to allow Python to load C extension modules.
 
-Loading shared libraries uses "libdl.so" library. This library isn't part of NativeClient source. It is downloaded as part of an architecture specific tgz archive (for each architecture). It seems to have some bugs (or super-weird behavior), in particular opening "/lib/foo" translates to "/foo", while "/./lib/foo" works. This is special for the "/lib" path, so we avoid it by putting libraries under "/usr/lib".
+Loading shared libraries uses "libdl.so" library. This library isn't part of NativeClient source. It is downloaded as part of an architecture specific tgz archive (for each architecture). It seems to have some bugs (or super-weird behavior), in particular opening "/lib/foo" translates to "/foo", while "/./lib/foo" works. This is special for the "/lib" path, so we avoid it by putting libraries under "/slib".
