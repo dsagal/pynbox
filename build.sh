@@ -11,7 +11,13 @@ WEBPORTS_PEPPER_VERSION=49
 ARCHD=x86-64
 NACL_ARCH=x86_64
 TOOLCHAIN_ARCH=x86
-OS_SUBDIR=mac
+if [ `uname -s` = "Darwin" ]; then
+  OS_TYPE=mac
+elif [ `uname -s` = 'Linux' ]; then
+  OS_TYPE=linux
+else
+  OS_TYPE=unknown
+fi
 
 DEPOT_TOOLS_PATH=$ROOT/software/depot_tools
 NACL_SDK_ROOT=$ROOT/software/nacl_sdk/pepper_$NACL_SDK_PEPPER_VERSION
@@ -19,7 +25,7 @@ WEBPORTS_DIR=$ROOT/software/webports/src
 
 SANDBOX_DEST_ROOT=$ROOT/build/root
 
-NACL_TOOLCHAIN_DIR=$NACL_SDK_ROOT/toolchain/${OS_SUBDIR}_${TOOLCHAIN_ARCH}_glibc/${NACL_ARCH}-nacl
+NACL_TOOLCHAIN_DIR=$NACL_SDK_ROOT/toolchain/${OS_TYPE}_${TOOLCHAIN_ARCH}_glibc/${NACL_ARCH}-nacl
 
 if [ -n "$INSTALL_PYTHON_MODULE" ]; then
   pushdir "$WEBPORTS_DIR"
@@ -63,14 +69,16 @@ export PATH=$DEPOT_TOOLS_PATH:$PATH
 #----------------------------------------------------------------------
 header "--- fetch NaCl SDK"
 NACL_SDK_BASE_DIR=`dirname "$NACL_SDK_ROOT"`
+NACL_SDK_SYNC=$BUILD_SYNC
 if [ ! -d "$NACL_SDK_BASE_DIR" ]; then
   run curl -O -L https://storage.googleapis.com/nativeclient-mirror/nacl/nacl_sdk/nacl_sdk.zip
   run unzip -d nacl_tmp nacl_sdk.zip
   run mv nacl_tmp/nacl_sdk "$NACL_SDK_BASE_DIR"
   run rmdir nacl_tmp
   run rm nacl_sdk.zip
+  NACL_SDK_SYNC=yes
 fi
-if [ "$BUILD_SYNC" = "yes" ]; then
+if [ "$NACL_SDK_SYNC" = "yes" ]; then
   pushdir "$NACL_SDK_BASE_DIR"
     run_oneline ./naclsdk update ${VERBOSE:+-v} pepper_$NACL_SDK_PEPPER_VERSION
   popdir
@@ -137,11 +145,11 @@ if [ ! -d "$WEBPORTS_DIR" ]; then
   popdir
   WEBPORTS_SYNC=yes
 fi
-pushdir "$WEBPORTS_DIR"
-  if [ "$WEBPORTS_SYNC" = "yes" ]; then
+if [ "$WEBPORTS_SYNC" = "yes" ]; then
+  pushdir "$WEBPORTS_DIR"
     run_oneline gclient sync
-  fi
-popdir
+  popdir
+fi
 
 
 #----------------------------------------------------------------------
@@ -216,6 +224,11 @@ run build/run python test/test_nacl.py
 #----------------------------------------------------------------------
 # Prepare a package of everything needed to run sandboxed python (all in build directory).
 #----------------------------------------------------------------------
-OUTPUT_BUNDLE=pynbox-${OS_SUBDIR}-${TOOLCHAIN_ARCH}.tgz
-run_oneline tar -s /build/nacl/ --exclude="*.pyc" -zcvf $OUTPUT_BUNDLE build/
+OUTPUT_BUNDLE=pynbox-${OS_TYPE}-${TOOLCHAIN_ARCH}.tgz
+if [ $OS_TYPE = 'mac' ]; then
+  TAR_TRANSFORM_FLAG="-s /build/nacl"
+elif [ $OS_TYPE = 'linux' ]; then
+  TAR_TRANSFORM_FLAG="--transform s/build/nacl/"
+fi
+run_oneline tar $TAR_TRANSFORM_FLAG --exclude="*.pyc" -zcvf $OUTPUT_BUNDLE build/
 echo "DONE; output bundle in $ColorBlue$OUTPUT_BUNDLE$ColorReset"

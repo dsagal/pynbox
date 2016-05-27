@@ -1,4 +1,4 @@
-#!/usr/bin/env python -u
+#!/usr/bin/env python
 """
 Reads lines from stdin and outputs them on a single line, with each new line overwriting the
 previous one. Useful for watching progress, e.g. of builds, without filling up the screen.
@@ -19,5 +19,6 @@ while True:
     sys.stdout.write(rewind + line)
   else:
     sys.stdout.write(rewind + "..." + line[-columns + 3:])
+  sys.stdout.flush()
 
 sys.stdout.write("\n")

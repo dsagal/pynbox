@@ -111,7 +111,7 @@ apply_patch() {
 
 # Copy file or directory only if the source is newer than the target.
 copy_file() { rsync -Lv --chmod=a-w --update "$@" | ( grep -Ev '^(sent |total size |$)' || true ); }
-copy_dir()  { rsync -rlv --safe-links --chmod=a-w --update "$@" | ( grep -Ev '^(sent |total size |$)' || true ); }
+copy_dir()  { rsync -rlv --safe-links --chmod=Fa-w --update "$@" | ( grep -Ev '^(sent |total size |$)' || true ); }
 
 #----------------------------------------------------------------------
 # Copy full stdout and stderr to a log file.
