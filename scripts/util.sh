@@ -17,7 +17,7 @@ ONELINE=`pwd`/scripts/oneline
 
 # Variables controlled by command-line options.
 BUILD_SYNC=no
-BUILD_NACL_SRC=no
+BUILD_NACL_SRC=yes
 BUILD_PYTHON_FORCE=0
 INSTALL_PYTHON_MODULE=
 VERBOSE=
@@ -27,7 +27,7 @@ process_options() {
     case "$1" in
       --sync) BUILD_SYNC=yes
         ;;
-      --nacl_src) BUILD_NACL_SRC=yes
+      --no_nacl_src) BUILD_NACL_SRC=no
         ;;
       --rebuild_python) BUILD_PYTHON_FORCE=1
         ;;
@@ -42,8 +42,8 @@ Build everything needed to run Python within NativeClient (NaCl) sandbox.
   -h          Display this help and exit
   -v          Verbose mode
   --sync      Run "gclient sync" steps
-  --nacl_src  Don't skip the building of NaCl tools from sources (they are not
-              needed unless you need to work on the NaCl tools themselves).
+  --no_nacl_src  Skip the building of NaCl tools from sources, and use the
+              pre-built ones from the SDK.
   --rebuild_python
               Force-rebuild python webport (useful if you changed its code,
               since the build does not pick up changes automatically).
@@ -110,8 +110,8 @@ apply_patch() {
 }
 
 # Copy file or directory only if the source is newer than the target.
-copy_file() { rsync -Lv --chmod=a-w --update "$@" | ( grep -Ev '^(sent |total size |$)' || true ); }
-copy_dir()  { rsync -rlv --safe-links --chmod=Fa-w --update "$@" | ( grep -Ev '^(sent |total size |$)' || true ); }
+copy_file() { rsync -Ltv --chmod=a-w "$@" | ( grep -Ev '^(sent |total size |$)' || true ); }
+copy_dir()  { rsync -rltv --safe-links --chmod=Fa-w "$@" | ( grep -Ev '^(sent |total size |$)' || true ); }
 
 #----------------------------------------------------------------------
 # Copy full stdout and stderr to a log file.

@@ -8,6 +8,7 @@ source scripts/util.sh
 ROOT=`pwd`
 NACL_SDK_PEPPER_VERSION=50
 WEBPORTS_PEPPER_VERSION=49
+NACL_SRC_BRANCH=readonly_mount
 ARCHD=x86-64
 NACL_ARCH=x86_64
 TOOLCHAIN_ARCH=x86
@@ -96,12 +97,27 @@ if [ "$BUILD_NACL_SRC" = "yes" ]; then
   if [ ! -d "$NACL_DIR" ]; then
     mkdir -p software/nacl
     pushdir software/nacl
-      run python -u $DEPOT_TOOLS_PATH/fetch.py --no-history nacl
+      # This line would fetch the official nacl. We do a little hacking to
+      # fetch from our own repository copy that has additional changes.
+      #run $DEPOT_TOOLS_PATH/fetch.py --no-history nacl
+      cat >> .gclient <<EOF
+solutions = [
+{
+  "managed": False,
+  "name": "native_client",
+  "url": "https://github.com/dsagal/native_client.git",
+  "custom_deps": {},
+  "deps_file": "DEPS",
+  "safesync_url": "",
+},
+]
+EOF
+      run_oneline gclient sync
     popdir
     NACL_SRC_SYNC=yes
   fi
   pushdir "$NACL_DIR"
-    run git checkout master
+    run git checkout "$NACL_SRC_BRANCH"
     run git pull
     if [ "$NACL_SRC_SYNC" = "yes" ]; then
       run_oneline gclient sync
@@ -120,9 +136,10 @@ if [ "$BUILD_NACL_SRC" = "yes" ]; then
     # Workaround for only having XCode command-line tools without full SDK (which is fine)
     apply_patch $ROOT/patches/SConstruct.patch
 
-    run_oneline ./scons ${VERBOSE:+--verbose} platform=$ARCHD sel_ldr
+    NACL_SRC_TESTS="run_limited_file_access_test run_limited_file_access_ro_test"
+    run_oneline ./scons ${VERBOSE:+--verbose} platform=$ARCHD sel_ldr $NACL_SRC_TESTS
 
-    BUILT_SEL_LDR_BINARY=`pwd`/scons-out/opt-mac-$ARCHD/staging/sel_ldr
+    BUILT_SEL_LDR_BINARY=`pwd`/scons-out/opt-$OS_TYPE-$ARCHD/staging/sel_ldr
     echo "Build result should be here: $BUILT_SEL_LDR_BINARY"
   popdir
 fi
@@ -176,9 +193,15 @@ mkdir -p "$SANDBOX_DEST_ROOT" "$SANDBOX_DEST_LIBDIR"
 
 # Copy the outer binaries and libraries needed to run python in the sandbox.
 copy_file $ROOT/scripts/run                             build/run
-copy_file $NACL_SDK_ROOT/tools/sel_ldr_$NACL_ARCH       build/sel_ldr
 copy_file $NACL_SDK_ROOT/tools/irt_core_$NACL_ARCH.nexe build/irt_core.nexe
 copy_file $NACL_TOOLCHAIN_DIR/lib/runnable-ld.so        build/runnable-ld.so
+
+# Copy the sel_ldr binary, from source if we built it, otherwise from the SDK.
+if [ -n "$BUILT_SEL_LDR_BINARY" ]; then
+  copy_file $BUILT_SEL_LDR_BINARY                       build/sel_ldr
+else
+  copy_file $NACL_SDK_ROOT/tools/sel_ldr_$NACL_ARCH     build/sel_ldr
+fi
 
 # Copy all of python installation into the sandbox.
 run_oneline copy_dir "$WEBPORTS_DIR"/out/build/python/install_${ARCHD}_glibc/payload/ "$SANDBOX_DEST_ROOT/python"
@@ -226,7 +249,7 @@ run build/run python test/test_nacl.py
 #----------------------------------------------------------------------
 OUTPUT_BUNDLE=pynbox-${OS_TYPE}-${TOOLCHAIN_ARCH}.tgz
 if [ $OS_TYPE = 'mac' ]; then
-  TAR_TRANSFORM_FLAG="-s /build/nacl"
+  TAR_TRANSFORM_FLAG="-s /build/nacl/"
 elif [ $OS_TYPE = 'linux' ]; then
   TAR_TRANSFORM_FLAG="--transform s/build/nacl/"
 fi
