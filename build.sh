@@ -249,21 +249,22 @@ run build/run python test/test_nacl.py
 #----------------------------------------------------------------------
 # Prepare a package of everything needed to run sandboxed python (all in build directory).
 #----------------------------------------------------------------------
-if [ "$RELEASE" = "yes" ]; then
-  # Record version information into a file in the build.
-  BUILD_INFO="$ROOT/build/buildinfo.txt"
-  function get_git_info() {
-    echo $1 `git -C $2 remote -v | awk '/fetch/{print $2}'` `git -C $2 rev-parse HEAD`
-  }
-  ( echo NACL_SDK_PEPPER_VERSION $NACL_SDK_PEPPER_VERSION;
-    echo WEBPORTS_PEPPER_VERSION $WEBPORTS_PEPPER_VERSION;
-    get_git_info nacl_src $NACL_DIR;
-    get_git_info webports $WEBPORTS_DIR
-  ) > "$BUILD_INFO"
+# Record version information into a file in the build.
+BUILD_INFO="$ROOT/build/buildinfo.txt"
+function get_git_info() {
+  echo $1 `git -C $2 remote -v | awk '/fetch/{print $2}'` `git -C $2 rev-parse HEAD`
+}
+( echo NACL_SDK_PEPPER_VERSION $NACL_SDK_PEPPER_VERSION;
+  echo WEBPORTS_PEPPER_VERSION $WEBPORTS_PEPPER_VERSION;
+  get_git_info nacl_src $NACL_DIR;
+  get_git_info webports $WEBPORTS_DIR
+) > "$BUILD_INFO"
 
-  VERSION_ID_TMP=`date +%Y-%m-%d ; shasum -a 256 "$BUILD_INFO"`
-  VERSION_ID=`echo $VERSION_ID_TMP | awk '{print $1 "." substr($2,1,6)}'`
-  OUTPUT_BUNDLE=pynbox-${OS_TYPE}-${TOOLCHAIN_ARCH}.${VERSION_ID}.tgz
+VERSION_ID_TMP=`date +%Y-%m-%d ; shasum -a 256 "$BUILD_INFO"`
+VERSION_ID=`echo $VERSION_ID_TMP | awk '{print $1 "." substr($2,1,6)}'`
+OUTPUT_BUNDLE=pynbox-${OS_TYPE}-${TOOLCHAIN_ARCH}.${VERSION_ID}.tgz
+
+if [ "$RELEASE" = "yes" ]; then
   echo "Creating output bundle $ColorBlue$OUTPUT_BUNDLE$ColorReset"
   if [ $OS_TYPE = 'mac' ]; then
     TAR_TRANSFORM_FLAG="-s /build/nacl/"
@@ -275,4 +276,6 @@ if [ "$RELEASE" = "yes" ]; then
     (echo "${ColorBlue}To upload to S3, you must have 'aws' client installed, and ";
     echo "suitable credential configured for profile 'pynbox'${ColorReset}";
     exit 1)
+else
+  echo "Output bundle would be $ColorBlue$OUTPUT_BUNDLE$ColorReset"
 fi
