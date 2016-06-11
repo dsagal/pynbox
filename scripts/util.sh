@@ -18,8 +18,10 @@ ONELINE=`pwd`/scripts/oneline
 # Variables controlled by command-line options.
 BUILD_SYNC=no
 BUILD_NACL_SRC=yes
+BUILD_NACL_TESTS=yes
 BUILD_PYTHON_FORCE=0
 INSTALL_PYTHON_MODULE=
+RELEASE=no
 VERBOSE=
 
 process_options() {
@@ -29,9 +31,13 @@ process_options() {
         ;;
       --no_nacl_src) BUILD_NACL_SRC=no
         ;;
+      --no_nacl_tests) BUILD_NACL_TESTS=no
+        ;;
       --rebuild_python) BUILD_PYTHON_FORCE=1
         ;;
       -v) VERBOSE=yes
+        ;;
+      --release) RELEASE=yes
         ;;
       install) INSTALL_PYTHON_MODULE="$2"; shift
         ;;
@@ -44,9 +50,11 @@ Build everything needed to run Python within NativeClient (NaCl) sandbox.
   --sync      Run "gclient sync" steps
   --no_nacl_src  Skip the building of NaCl tools from sources, and use the
               pre-built ones from the SDK.
+  --no_nacl_tests Skip building sel_ldr-related tests in NaCl sources.
   --rebuild_python
               Force-rebuild python webport (useful if you changed its code,
               since the build does not pick up changes automatically).
+  --release   Package the build results into a release, and publish to S3.
   install <module>
               Build and install a python module for which there is a webport.
 EOF

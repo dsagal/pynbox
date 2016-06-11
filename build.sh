@@ -132,12 +132,14 @@ fi
 if [ "$BUILD_NACL_SRC" = "yes" ]; then
   header "--- build native_client's sel_ldr"
   pushdir "$NACL_DIR"
-
-    # Workaround for only having XCode command-line tools without full SDK (which is fine)
-    apply_patch $ROOT/patches/SConstruct.patch
-
-    NACL_SRC_TESTS="run_limited_file_access_test run_limited_file_access_ro_test"
-    run_oneline ./scons ${VERBOSE:+--verbose} platform=$ARCHD sel_ldr $NACL_SRC_TESTS
+    if [ "$BUILD_NACL_TESTS" = "yes" ]; then
+      NACL_SRC_TESTS="run_limited_file_access_test run_limited_file_access_ro_test"
+      NACL_SRC_MODE=""
+    else
+      NACL_SRC_TESTS=""
+      NACL_SRC_MODE="opt-$OS_TYPE"
+    fi
+    run_oneline ./scons ${VERBOSE:+--verbose} platform=$ARCHD MODE=$NACL_SRC_MODE sel_ldr $NACL_SRC_TESTS
 
     BUILT_SEL_LDR_BINARY=`pwd`/scons-out/opt-$OS_TYPE-$ARCHD/staging/sel_ldr
     echo "Build result should be here: $BUILT_SEL_LDR_BINARY"
@@ -247,11 +249,30 @@ run build/run python test/test_nacl.py
 #----------------------------------------------------------------------
 # Prepare a package of everything needed to run sandboxed python (all in build directory).
 #----------------------------------------------------------------------
-OUTPUT_BUNDLE=pynbox-${OS_TYPE}-${TOOLCHAIN_ARCH}.tgz
-if [ $OS_TYPE = 'mac' ]; then
-  TAR_TRANSFORM_FLAG="-s /build/nacl/"
-elif [ $OS_TYPE = 'linux' ]; then
-  TAR_TRANSFORM_FLAG="--transform s/build/nacl/"
+if [ "$RELEASE" = "yes" ]; then
+  # Record version information into a file in the build.
+  BUILD_INFO="$ROOT/build/buildinfo.txt"
+  function get_git_info() {
+    echo $1 `git -C $2 remote -v | awk '/fetch/{print $2}'` `git -C $2 rev-parse HEAD`
+  }
+  ( echo NACL_SDK_PEPPER_VERSION $NACL_SDK_PEPPER_VERSION;
+    echo WEBPORTS_PEPPER_VERSION $WEBPORTS_PEPPER_VERSION;
+    get_git_info nacl_src $NACL_DIR;
+    get_git_info webports $WEBPORTS_DIR
+  ) > "$BUILD_INFO"
+
+  VERSION_ID_TMP=`date +%Y-%m-%d ; shasum -a 256 "$BUILD_INFO"`
+  VERSION_ID=`echo $VERSION_ID_TMP | awk '{print $1 "." substr($2,1,6)}'`
+  OUTPUT_BUNDLE=pynbox-${OS_TYPE}-${TOOLCHAIN_ARCH}.${VERSION_ID}.tgz
+  echo "Creating output bundle $ColorBlue$OUTPUT_BUNDLE$ColorReset"
+  if [ $OS_TYPE = 'mac' ]; then
+    TAR_TRANSFORM_FLAG="-s /build/nacl/"
+  elif [ $OS_TYPE = 'linux' ]; then
+    TAR_TRANSFORM_FLAG="--transform s/build/nacl/"
+  fi
+  run_oneline tar $TAR_TRANSFORM_FLAG --exclude="*.pyc" -zcvf $OUTPUT_BUNDLE build/
+  run aws --profile pynbox s3 cp "$OUTPUT_BUNDLE" s3://grist-pynbox/ ||
+    (echo "${ColorBlue}To upload to S3, you must have 'aws' client installed, and ";
+    echo "suitable credential configured for profile 'pynbox'${ColorReset}";
+    exit 1)
 fi
-run_oneline tar $TAR_TRANSFORM_FLAG --exclude="*.pyc" -zcvf $OUTPUT_BUNDLE build/
-echo "DONE; output bundle in $ColorBlue$OUTPUT_BUNDLE$ColorReset"
