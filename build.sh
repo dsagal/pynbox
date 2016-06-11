@@ -237,7 +237,7 @@ mkdir -p "$SANDBOX_DEST_ROOT/test"
 echo "Here is how you can build C++ code for use in the sandbox"
 NACL_LIBDIR=$NACL_SDK_ROOT/lib/glibc_${NACL_ARCH}/Release
 run_oneline $NACL_TOOLCHAIN_DIR/bin/g++ -I$NACL_SDK_ROOT/include -L$NACL_LIBDIR -o "$SANDBOX_DEST_ROOT"/test/test_hello.nexe test/test_hello.cc -ldl
-run build/run test/test_hello.nexe
+run build/run -R -L test/test_hello.nexe
 
 #----------------------------------------------------------------------
 # Run a bunch of python tests under the sandbox.

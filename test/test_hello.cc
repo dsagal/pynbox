@@ -72,6 +72,15 @@ string test_missing_syscall(int result) {
   return "";
 }
 
+string test_no_chmod() {
+  int result = chmod("/python/bin", 0777);
+  if (result != -1) { return "expected chmod to fail, but it succeeded"; }
+  if (errno != EACCES) {
+    return string("expected chmod to fail with EACCES, not ") + strerror(errno);
+  }
+  return "";
+}
+
 string test_no_fork() {
   int pid = fork();
   if (pid == 0) {
@@ -109,10 +118,8 @@ int main() {
   TEST(test_dlopen("/slib/libz.so.1"));
   TEST(test_dlopen("libz.so.1"));
 
-  // For us, it would be better if chmod always failed (and generally support read-only
-  // filesystem). But it succeeds, limiting the mode to just the RWX user flags (see NaClMapMode()
-  // in software/nacl/native_client/src/shared/platform/posix/nacl_host_desc.c).
-  TEST_SKIP(test_missing_syscall(chmod("/python/bin", 0777)));
+  // We should run the test with -R -L, and chmod should always fail with EPERM.
+  TEST(test_no_chmod());
 
   // Report a summary
   printf("%d succeeded, %d skipped, %d failed\n", count_ok, count_skips, count_failures);
