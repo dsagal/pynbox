@@ -123,7 +123,7 @@ do_build() {
 
   echo "Using container $DOCKER_CONTAINER to build $1"
   docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc build "$1"
-  docker exec $DOCKER_CONTAINER rsync -av out/packages/ /outputs/
+  docker exec $DOCKER_CONTAINER rsync -av out/packages/ //outputs/
   # TODO NEED VERSIONS HERE. THIS WILL ADDRESS THE ENTIRE BUILD STEP.
   # docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc depends "$1" > "outputs/${1}.packages"
 }
