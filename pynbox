@@ -111,7 +111,8 @@ do_startdocker() {
     fi
 
     echo "Starting docker container $DOCKER_CONTAINER from image $DOCKER_IMAGE"
-    docker run -it -d --name $DOCKER_CONTAINER -v `pwd`/build/webports-outputs:/outputs $DOCKER_IMAGE
+    # The extra slash in front helps it work on Windows and doesn't hurt Unix-like systems.
+    docker run -it -d --name $DOCKER_CONTAINER -v /`pwd`/build/webports-outputs:/outputs $DOCKER_IMAGE
   fi
 }
 
