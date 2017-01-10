@@ -6,6 +6,7 @@ ENV SDK_VERSION 50
 ENV NACL_ARCH x86_64
 ENV NACL_SDK_ROOT /nacl_sdk/pepper_$SDK_VERSION
 ENV PATH /depot_tools:/webports/src/bin:$PATH
+VOLUME /outputs
 
 # 'Multilib' libraries are required to compile 32-bit versions, e.g. relied on by the python-host port.
 RUN apt-get update && apt-get install -y \
@@ -60,5 +61,3 @@ ENV NACL_BARE 1
 # Force with F=1 to override 2to3 tool, which otherwise gives 'already exists' error.
 RUN bin/webports -v -V -t glibc build python
 RUN bin/webports -v -V -t glibc build python3
-
-VOLUME /outputs
