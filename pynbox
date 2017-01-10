@@ -1,0 +1,147 @@
+#!/bin/bash
+
+# This is written in bash so that it's possible to use pynbox to install sandboxed Python without
+# requiring unsandboxed Python just for the installation.
+
+DEFAULT_REPO="build/outputs,https://pynbox.org/repo"
+UPLOAD_REPO="https://pynbox.org/repo"
+
+DOCKER_IMAGE=pynbox-webports
+DOCKER_CONTAINER=pynbox-webports1
+
+USAGE="Usage: $0 [-h] [-v] {install|build|upload} [options]
+
+COMMANDS:
+  install <dest> <what>   Install a pynbox component.
+  build <what>            Build a pynbox component from source.
+  upload <what>           Upload a build pynbox component to online repo.
+  startdocker             Start docker container (done by 'build' if needed).
+  stopdocker              Stop docker container, to clean up after building.
+
+OPTIONS:
+  <what>          The component to build or install, which may be:
+                    'trusted'     The trusted part of the sandbox code.
+                    'python2'     Python2 sandboxed interpreter and core modules.
+                    'python3'     Python3 sandboxed interpreter and core modules.
+                    <module>      Any Python module available in the repo.
+  <dest>          [for install] Destination directory for the install.
+  --repo SOURCES  [for install] Search for built components in the given sources, which are a
+                  comma-separated list of directories of URLs (the latter must start with
+                  http:// or https://). By default, searches $DEFAULT_REPO
+  —-dest REPO-URL [for upload] The repository to upload it to. By default, $UPLOAD_REPO
+  -h, --help      Display this help and exit.
+  -v, --verbose   Be more verbose.
+"
+
+# Settings for script robustness.
+set -o pipefail  # trace ERR through pipes
+set -o nounset   # same as set -u : treat unset variables as an error
+set -o errtrace  # same as set -E: inherit ERR trap in functions
+trap 'echo Error in line "${BASH_SOURCE}":"${LINENO}"; exit 1' ERR
+trap 'echo "Exiting on interrupt"; exit 1' INT
+
+ACTION=
+SOURCES=
+VERBOSE=
+DEST_URL=
+
+usage_exit() {
+  echo "$USAGE"
+  exit 2
+}
+
+process_options() {
+  while [[ $# > 0 ]]; do
+    case "$1" in
+      -v|--verbose)
+        VERBOSE=yes
+        ;;
+      install|build|upload|startdocker|stopdocker)
+        ACTION="$1"
+        ;;
+      --repo)
+        SOURCES="$2"
+        shift
+        ;;
+      --dest)
+        DEST_URL="$2"
+        shift
+        ;;
+      -h|--help|-*)
+        usage_exit
+        ;;
+      *)
+        break
+        ;;
+    esac
+    shift
+  done
+  if [ -z "$ACTION" ]; then usage_exit; fi
+  ARGS="$@"
+}
+
+process_options "$@"
+
+do_install() {
+  if [[ $# != 2 ]]; then usage_exit; fi
+  echo INSTALL $1 $2
+
+  #${1}.packages -> basenames
+  #  extract ${basename}_x86-64_glibc.tar.bz2
+  #  ${basename}.files - contains rsync rules for those files
+  #  use those rules to copy to DEST/box
+}
+
+# Outputs "running" if running, something else otherwise.
+docker_container_status() {
+  docker inspect --type=container --format='{{.State.Status}}' $DOCKER_CONTAINER 2>/dev/null
+}
+
+do_startdocker() {
+  if [[ $# != 0 ]]; then usage_exit; fi
+
+  # See if our docker container is running.
+  if [ "$(docker_container_status)" = "running" ]; then
+    echo "Docker container $DOCKER_CONTAINER already running"
+  else
+    # See if our image exists, or needs to be built.
+    if [[ -z $(docker images -q $DOCKER_IMAGE 2>/dev/null) ]]; then
+      echo "Building docker image $DOCKER_IMAGE"
+      docker build -t $DOCKER_IMAGE webports/
+    fi
+
+    echo "Starting docker container $DOCKER_CONTAINER from image $DOCKER_IMAGE"
+    docker run -it -d --name $DOCKER_CONTAINER -v `pwd`/build/webports-outputs:/outputs $DOCKER_IMAGE
+  fi
+}
+
+do_build() {
+  if [[ $# != 1 ]]; then usage_exit; fi
+
+  do_startdocker
+
+  echo "Using container $DOCKER_CONTAINER to build $1"
+  docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc build "$1"
+  docker exec $DOCKER_CONTAINER rsync -av out/packages/ /outputs/
+  # TODO NEED VERSIONS HERE. THIS WILL ADDRESS THE ENTIRE BUILD STEP.
+  # docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc depends "$1" > "outputs/${1}.packages"
+}
+
+do_stopdocker() {
+  if [[ $# != 0 ]]; then usage_exit; fi
+
+  if [ "$(docker_container_status)" != "running" ]; then
+    echo "Docker container $DOCKER_CONTAINER is not running"
+  else
+    echo "Stopping and removing docker container $DOCKER_CONTAINER"
+    docker stop $DOCKER_CONTAINER > /dev/null
+    docker rm $DOCKER_CONTAINER > /dev/null
+  fi
+}
+
+do_upload() {
+  if [[ $# != 1 ]]; then usage_exit; fi
+  echo UPLOAD $1
+}
+
+do_$ACTION ${ARGS[@]}
