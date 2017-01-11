@@ -110,9 +110,18 @@ do_startdocker() {
       docker build -t $DOCKER_IMAGE webports/
     fi
 
+    # Clean up an existing container if needed.
+    if [ "$(docker_container_status)" != "" ]; then
+      echo "Removing non-running container $DOCKER_CONTAINER"
+      docker rm $DOCKER_CONTAINER > /dev/null
+    fi
+
     echo "Starting docker container $DOCKER_CONTAINER from image $DOCKER_IMAGE"
     # The extra slash in front helps it work on Windows and doesn't hurt Unix-like systems.
-    docker run -it -d --name $DOCKER_CONTAINER -v /`pwd`/build/webports-outputs:/outputs $DOCKER_IMAGE
+    docker run -it -d --name $DOCKER_CONTAINER \
+      -v /`pwd`/build/webports:/host/build \
+      -v /`pwd`/webports/packages:/host/packages \
+      $DOCKER_IMAGE
   fi
 }
 
@@ -123,20 +132,21 @@ do_build() {
 
   echo "Using container $DOCKER_CONTAINER to build $1"
   docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc build "$1"
-  docker exec $DOCKER_CONTAINER rsync -av out/packages/ //outputs/
-  # TODO NEED VERSIONS HERE. THIS WILL ADDRESS THE ENTIRE BUILD STEP.
-  # docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc depends "$1" > "outputs/${1}.packages"
+  docker exec $DOCKER_CONTAINER "/host/packages/${1}.create.sh" /host/build/
 }
 
 do_stopdocker() {
   if [[ $# != 0 ]]; then usage_exit; fi
 
-  if [ "$(docker_container_status)" != "running" ]; then
-    echo "Docker container $DOCKER_CONTAINER is not running"
-  else
+  if [ "$(docker_container_status)" = "running" ]; then
     echo "Stopping and removing docker container $DOCKER_CONTAINER"
     docker stop $DOCKER_CONTAINER > /dev/null
     docker rm $DOCKER_CONTAINER > /dev/null
+  elif [ "$(docker_container_status)" != "" ]; then
+    echo "Removing non-running container $DOCKER_CONTAINER"
+    docker rm $DOCKER_CONTAINER > /dev/null
+  else
+    echo "Docker container $DOCKER_CONTAINER is not running"
   fi
 }
 

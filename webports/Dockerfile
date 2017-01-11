@@ -6,7 +6,6 @@ ENV SDK_VERSION 50
 ENV NACL_ARCH x86_64
 ENV NACL_SDK_ROOT /nacl_sdk/pepper_$SDK_VERSION
 ENV PATH /depot_tools:/webports/src/bin:$PATH
-VOLUME /outputs
 
 # 'Multilib' libraries are required to compile 32-bit versions, e.g. relied on by the python-host port.
 RUN apt-get update && apt-get install -y \
@@ -33,8 +32,7 @@ RUN git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
 # NaCl SDK
 RUN curl -O -L https://storage.googleapis.com/nativeclient-mirror/nacl/nacl_sdk/nacl_sdk.zip
-RUN unzip nacl_sdk.zip
-RUN rm nacl_sdk.zip
+RUN unzip nacl_sdk.zip && rm nacl_sdk.zip
 RUN ./nacl_sdk/naclsdk install pepper_$SDK_VERSION
 
 # 32-bit OpenSSL (needed for python-host, which is needed by Python).
@@ -52,12 +50,16 @@ RUN gclient config --name=src https://github.com/dsagal/webports.git && gclient 
 # Build the webports.
 WORKDIR /webports/src
 
-RUN make V=2 F=0 FROM_SOURCE=1 TOOLCHAIN=glibc CFLAGS=$SSL32_CFLAGS LDFLAGS=$SSL32_LDFLAGS python-host
-
 # NACL_BARE=1 is a variable added to our webports clone, used e.g. in the
 # Python build to omit certain Chrome-specific libraries.
 ENV NACL_BARE 1
 
-# Force with F=1 to override 2to3 tool, which otherwise gives 'already exists' error.
+RUN make V=2 F=0 FROM_SOURCE=1 TOOLCHAIN=glibc CFLAGS=$SSL32_CFLAGS LDFLAGS=$SSL32_LDFLAGS python-host
+
+# Includes the builds of python and python3. These are time-consuming, so it's nice to have them
+# prebuilt as part of the image.
 RUN bin/webports -v -V -t glibc build python
 RUN bin/webports -v -V -t glibc build python3
+
+VOLUME /host/packages
+VOLUME /host/build
