@@ -92,20 +92,3 @@ copy_file $CHECKOUT_DIR/scripts/run     $STAGE_DIR/bin/
 #copy_file $DIR/scripts/nacl_python3     $STAGE_DIR/bin/
 
 create_archive bin/
-
-
-# # Copy the outer binaries and libraries needed to run python in the sandbox.
-# copy_file $NACL_BUILD_RESULTS/sel_ldr           build/runner/sel_ldr
-# copy_file $DIR/scripts/run                              build/runner/run
-# 
-# build/nacl//native_client/toolchain/mac_x86/nacl_x86_glibc/x86_64-nacl/lib/runnable-ld.so
-# 
-# # THESE SHOULD COME FROM DOCKER -- do not seem platform-specific 
-# NACL_BUILD_RESULTS_UNTRUSTED=$NACL_DIR/scons-out/nacl_irt-$ARCHD/staging
-# copy_file $NACL_BUILD_RESULTS_UNTRUSTED/irt_core.nexe   build/runner/irt_core.nexe
-# NACL_TOOLCHAIN_ARCH=x86
-# NACL_ARCH=x86_64
-# NACL_TOOLCHAIN_DIR=$NACL_DIR/toolchain/
-# NACL_TOOLCHAIN_DIR=$NACL_DIR/toolchain/${OS_TYPE}_${NACL_TOOLCHAIN_ARCH}_glibc/${NACL_ARCH}-nacl
-# copy_file $NACL_TOOLCHAIN_DIR/lib/runnable-ld.so        build/runner/runnable-ld.so
-# 

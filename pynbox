@@ -84,12 +84,12 @@ process_options "$@"
 
 do_install() {
   if [[ $# != 2 ]]; then usage_exit; fi
-  echo INSTALL $1 $2
+  local dest=$1
+  local package=build/packages/${2}.tbz2
 
-  #${1}.packages -> basenames
-  #  extract ${basename}_x86-64_glibc.tar.bz2
-  #  ${basename}.files - contains rsync rules for those files
-  #  use those rules to copy to DEST/box
+  echo "Installing $package into $dest"
+  mkdir -p "$dest"
+  tar -C $dest -jxf $package
 }
 
 # Outputs "running" if running, something else otherwise.
