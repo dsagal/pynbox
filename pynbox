@@ -126,10 +126,16 @@ do_startdocker() {
 
 do_build() {
   if [[ $# != 1 ]]; then usage_exit; fi
+  local script=packages/${1}.create.sh
+  local target=build/packages/${1}.tbz2
 
   do_startdocker
 
-  local target=build/packages/${1}.tbz2
+  if [[ ! -x "$script" ]]; then
+    echo "$script must exist and be executable"
+    exit 1
+  fi
+
   if [[ -e $target ]]; then
     echo "Removing previous version of $target"
     rm $target
@@ -137,10 +143,12 @@ do_build() {
 
   echo "Using container $DOCKER_CONTAINER to build $1"
   if [[ "$1" == "sandbox_outer" ]]; then
-    ./packages/${1}.create.sh build/packages
+    $script build/packages
   else
-    docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc build "$1"
-    docker exec $DOCKER_CONTAINER "/host/packages/${1}.create.sh" /build/packages
+    if [[ "$1" != "sandbox_inner" ]]; then
+      docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc build "$1"
+    fi
+    docker exec $DOCKER_CONTAINER "/host/$script" /build/packages
     docker cp $DOCKER_CONTAINER:/build/packages/${1}.tbz2 build/packages/
   fi
   if [[ -e $target ]]; then

@@ -83,6 +83,9 @@ $NACL_DIR/scons -C "$NACL_DIR" platform=$ARCHD $NACL_SRC_TESTS
 # Prepare the 'sandbox_outer' package with sel_ldr and convenience scripts.
 #----------------------------------------------------------------------
 
+echo "*** Preparing files to package"
+mkdir -p $STAGE_DIR/bin
+
 copy_file $NACL_BUILD_RESULTS/sel_ldr   $STAGE_DIR/bin/
 copy_file $CHECKOUT_DIR/scripts/run     $STAGE_DIR/bin/
 #copy_file $DIR/scripts/nacl_python2     $STAGE_DIR/bin/
