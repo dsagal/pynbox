@@ -15,6 +15,7 @@ extract bzip2_1.0.6
 extract python_2.7.11
 
 echo "Preparing files to package"
+mkdir -p $ROOT/{bin,slib,lib/python2.7}
 
 # Copy the python binary.
 copy_file $PAYLOAD/bin/python2.7.nexe          $ROOT/bin/
@@ -65,4 +66,5 @@ copy_file $PAYLOAD/lib/libreadline.so          $ROOT/slib/
 copy_file $PAYLOAD/lib/libssl.so.1.0.0         $ROOT/slib/
 copy_file $PAYLOAD/lib/libz.so.1               $ROOT/slib/
 
-create_archive
+strip_binaries_and_libs root/
+create_archive root/

@@ -1,3 +1,6 @@
 .local_vimrc
 *.swp
 *.pyc
+/build/packages/*.tbz2
+/build/nacl/
+/build/depot_tools/

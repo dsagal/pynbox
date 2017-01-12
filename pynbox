@@ -76,7 +76,7 @@ process_options() {
     esac
     shift
   done
-  if [ -z "$ACTION" ]; then usage_exit; fi
+  if [[ -z "$ACTION" ]]; then usage_exit; fi
   ARGS="$@"
 }
 
@@ -94,14 +94,14 @@ do_install() {
 
 # Outputs "running" if running, something else otherwise.
 docker_container_status() {
-  docker inspect --type=container --format='{{.State.Status}}' $DOCKER_CONTAINER 2>/dev/null
+  docker inspect --type=container --format='{{.State.Status}}' $DOCKER_CONTAINER 2>/dev/null || true
 }
 
 do_startdocker() {
   if [[ $# != 0 ]]; then usage_exit; fi
 
   # See if our docker container is running.
-  if [ "$(docker_container_status)" = "running" ]; then
+  if [[ "$(docker_container_status)" = "running" ]]; then
     echo "Docker container $DOCKER_CONTAINER already running"
   else
     # See if our image exists, or needs to be built.
@@ -111,7 +111,7 @@ do_startdocker() {
     fi
 
     # Clean up an existing container if needed.
-    if [ "$(docker_container_status)" != "" ]; then
+    if [[ "$(docker_container_status)" != "" ]]; then
       echo "Removing non-running container $DOCKER_CONTAINER"
       docker rm $DOCKER_CONTAINER > /dev/null
     fi
@@ -119,8 +119,7 @@ do_startdocker() {
     echo "Starting docker container $DOCKER_CONTAINER from image $DOCKER_IMAGE"
     # The extra slash in front helps it work on Windows and doesn't hurt Unix-like systems.
     docker run -it -d --name $DOCKER_CONTAINER \
-      -v /`pwd`/build/webports:/host/build \
-      -v /`pwd`/webports/packages:/host/packages \
+      -v /`pwd`/packages:/host/packages:ro \
       $DOCKER_IMAGE
   fi
 }
@@ -130,19 +129,36 @@ do_build() {
 
   do_startdocker
 
+  local target=build/packages/${1}.tbz2
+  if [[ -e $target ]]; then
+    echo "Removing previous version of $target"
+    rm $target
+  fi
+
   echo "Using container $DOCKER_CONTAINER to build $1"
-  docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc build "$1"
-  docker exec $DOCKER_CONTAINER "/host/packages/${1}.create.sh" /host/build
+  if [[ "$1" == "sandbox_outer" ]]; then
+    ./packages/${1}.create.sh build/packages
+  else
+    docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc build "$1"
+    docker exec $DOCKER_CONTAINER "/host/packages/${1}.create.sh" /build/packages
+    docker cp $DOCKER_CONTAINER:/build/packages/${1}.tbz2 build/packages/
+  fi
+  if [[ -e $target ]]; then
+    echo "Built $target"
+  else
+    echo "Expected $target to be built, but it wasn't!"
+    exit 1
+  fi
 }
 
 do_stopdocker() {
   if [[ $# != 0 ]]; then usage_exit; fi
 
-  if [ "$(docker_container_status)" = "running" ]; then
+  if [[ "$(docker_container_status)" = "running" ]]; then
     echo "Stopping and removing docker container $DOCKER_CONTAINER"
     docker stop $DOCKER_CONTAINER > /dev/null
     docker rm $DOCKER_CONTAINER > /dev/null
-  elif [ "$(docker_container_status)" != "" ]; then
+  elif [[ "$(docker_container_status)" != "" ]]; then
     echo "Removing non-running container $DOCKER_CONTAINER"
     docker rm $DOCKER_CONTAINER > /dev/null
   else
