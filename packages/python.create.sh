@@ -15,37 +15,43 @@ extract bzip2_1.0.6
 extract python_2.7.11
 
 echo "Preparing files to package"
-mkdir -p $ROOT/{bin,slib,lib/python2.7}
+
+# We install everything python-related under root/python, because python.nexe is built with
+# prefix=exec_prefix="/python". (Though I wasn't able to find how this is set.)
+PYROOT=$ROOT/python
+mkdir -p $ROOT/slib $PYROOT/{bin,lib/python2.7}
 
 # Copy the python binary.
-copy_file $PAYLOAD/bin/python2.7.nexe          $ROOT/bin/
+copy_file $PAYLOAD/bin/python2.7.nexe          $PYROOT/bin/
 
 # Include all the top-level python modules.
-copy_file $PAYLOAD/lib/python2.7/*.py          $ROOT/lib/python2.7/
+copy_file $PAYLOAD/lib/python2.7/*.py          $PYROOT/lib/python2.7/
 
 # Include all the native modules that python needs.
-copy_dir  $PAYLOAD/lib/python2.7/lib-dynload   $ROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/lib-dynload   $PYROOT/lib/python2.7/
 
 # To reduce the size of the sanboxed code, we skip a bunch of bigger python libraries that we
 # don't expect to work in the sandbox, as well as tests and some other unneeded files.
-copy_dir  $PAYLOAD/lib/python2.7/sqlite3       $ROOT/lib/python2.7/
-copy_dir  $PAYLOAD/lib/python2.7/logging       $ROOT/lib/python2.7/
-copy_dir  $PAYLOAD/lib/python2.7/encodings     $ROOT/lib/python2.7/
-copy_dir  $PAYLOAD/lib/python2.7/plat-nacl     $ROOT/lib/python2.7/
-copy_dir  $PAYLOAD/lib/python2.7/importlib     $ROOT/lib/python2.7/
-copy_dir  $PAYLOAD/lib/python2.7/xml           $ROOT/lib/python2.7/
-copy_dir  $PAYLOAD/lib/python2.7/curses        $ROOT/lib/python2.7/
-copy_dir  $PAYLOAD/lib/python2.7/site-packages $ROOT/lib/python2.7/
-copy_dir  $PAYLOAD/lib/python2.7/wsgiref       $ROOT/lib/python2.7/
-copy_dir  $PAYLOAD/lib/python2.7/unittest      $ROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/sqlite3       $PYROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/logging       $PYROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/encodings     $PYROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/plat-nacl     $PYROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/importlib     $PYROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/xml           $PYROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/curses        $PYROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/site-packages $PYROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/wsgiref       $PYROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/unittest      $PYROOT/lib/python2.7/
 copy_dir  --exclude 'test/' \
-          $PAYLOAD/lib/python2.7/email         $ROOT/lib/python2.7/
+          $PAYLOAD/lib/python2.7/bsddb         $PYROOT/lib/python2.7/
 copy_dir  --exclude 'test/' \
-          $PAYLOAD/lib/python2.7/ctypes        $ROOT/lib/python2.7/
-copy_dir  $PAYLOAD/lib/python2.7/hotshot       $ROOT/lib/python2.7/
-copy_dir  $PAYLOAD/lib/python2.7/compiler      $ROOT/lib/python2.7/
+          $PAYLOAD/lib/python2.7/email         $PYROOT/lib/python2.7/
+copy_dir  --exclude 'test/' \
+          $PAYLOAD/lib/python2.7/ctypes        $PYROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/hotshot       $PYROOT/lib/python2.7/
+copy_dir  $PAYLOAD/lib/python2.7/compiler      $PYROOT/lib/python2.7/
 copy_dir  --exclude 'tests/' \
-          $PAYLOAD/lib/python2.7/json          $ROOT/lib/python2.7/
+          $PAYLOAD/lib/python2.7/json          $PYROOT/lib/python2.7/
 
 # Include the necessary shared libraries.
 #   This command shows the shared libraries that a binary or library requires:

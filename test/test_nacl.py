@@ -136,8 +136,8 @@ class TestNaclSandbox(unittest.TestCase):
         else:
           other_failures.add(name)
 
-    KNOWN_MISSING = {'_sqlite3', '_bsddb', '_tkinter'}
-    KNOWN_FAILURES = {'_multiprocessing', '_MozillaCookieJar', '_LWPCookieJar', 'multiprocessing'}
+    KNOWN_MISSING = {'_sqlite3', '_bsddb', 'multiprocessing'}
+    KNOWN_FAILURES = {'_MozillaCookieJar', '_LWPCookieJar'}
     self.assertLessEqual(missing_dependencies, KNOWN_MISSING)
     self.assertLessEqual(other_failures, KNOWN_FAILURES)
 

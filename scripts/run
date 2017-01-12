@@ -30,5 +30,6 @@ if [ "$PROGRAM" = "python" ]; then
 fi
 
 # Change to the directory of the script, which should be the build directory.
-cd `dirname "$0"`
-exec ./sel_ldr -m root -B irt_core.nexe $SEL_LDR_FLAGS runnable-ld.so --library-path /slib "$PROGRAM" "$@"
+DIR="$(dirname $(dirname $BASH_SOURCE[0]))"
+cd "$DIR"
+exec bin/sel_ldr -m root -B lib/irt_core.nexe $SEL_LDR_FLAGS lib/runnable-ld.so --library-path /slib "$PROGRAM" "$@"
