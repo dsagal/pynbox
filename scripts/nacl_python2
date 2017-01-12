@@ -1,0 +1,12 @@
+#!/bin/bash
+
+DIR="$(dirname $BASH_SOURCE[0])"
+ARGS=("$@")
+
+if [[ ${#ARGS[@]} -eq 0 ]]; then
+  # Sandboxed python doesn't detect if it has a tty, so if called without arguments (for
+  # interactive REPL), add an explicit flag to make it interactive.
+  ARGS=(-i)
+fi
+
+exec $DIR/run /python/bin/python2.7.nexe "${ARGS[@]}"

@@ -1,35 +1,22 @@
 #!/bin/bash
 
-SILENCE_LOG=1
+BIN_DIR="$(dirname $BASH_SOURCE[0])"
+RUN_DIR="$(dirname $BIN_DIR)"
+
+# If no -l or -v option is specified for sel_ldr, silence the log by default.
+SILENCE_LOG="-l /dev/null"
 
 # Scan options recognized by sel_ldr (we only need to list those that take an
 # argument).
 while getopts ":h:r:w:i:f:l:m:E:v" opt; do
   case "$opt" in
-    l|v) SILENCE_LOG=0;;
+    l|v) SILENCE_LOG="";;
   esac
 done
 
 SEL_LDR_FLAGS=${@:1:$((OPTIND-1))}
-PROGRAM=${@:$OPTIND:1}
-shift $OPTIND
-
-# If no -l or -v option is specified for sel_ldr, silence the log by default.
-if [ "$SILENCE_LOG" = 1 ]; then
-  SEL_LDR_FLAGS="$SEL_LDR_FLAGS -l /dev/null"
-fi
-
-# Allow running as as "./run python" for convenience.
-if [ "$PROGRAM" = "python" ]; then
-  PROGRAM=/python/bin/python2.7.nexe
-  if [ $# -eq 0 ]; then
-    # Sandboxed python doesn't detect if it has a tty, so if called without arguments (for
-    # interactive REPL), add an explicit flag to make it interactive.
-    set -- -i
-  fi
-fi
+ARGS=("${@:$OPTIND}")
 
 # Change to the directory of the script, which should be the build directory.
-DIR="$(dirname $(dirname $BASH_SOURCE[0]))"
-cd "$DIR"
-exec bin/sel_ldr -m root -B lib/irt_core.nexe $SEL_LDR_FLAGS lib/runnable-ld.so --library-path /slib "$PROGRAM" "$@"
+cd "$RUN_DIR"
+exec bin/sel_ldr -m root -B lib/irt_core.nexe $SEL_LDR_FLAGS $SILENCE_LOG lib/runnable-ld.so --library-path /slib "${ARGS[@]}"
