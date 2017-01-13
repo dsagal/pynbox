@@ -41,6 +41,9 @@ set -o errtrace  # same as set -E: inherit ERR trap in functions
 trap 'echo Error in line "${BASH_SOURCE}":"${LINENO}"; exit 1' ERR
 trap 'echo "Exiting on interrupt"; exit 1' INT
 
+# When using Git Bash shell on Windows, prevent automatic path conversions.
+export MSYS_NO_PATHCONV=1
+
 ACTION=
 VERBOSE=
 
@@ -150,9 +153,8 @@ do_startdocker() {
     fi
 
     echo "Starting docker container $DOCKER_CONTAINER from image $DOCKER_IMAGE"
-    # The extra slash in front helps it work on Windows and doesn't hurt Unix-like systems.
     docker run -it -d --name $DOCKER_CONTAINER \
-      -v /`pwd`/packages:/host/packages:ro \
+      -v `pwd`/packages:/host/packages:ro \
       $DOCKER_IMAGE
   fi
 }
@@ -171,6 +173,15 @@ do_build() {
 
     if [[ ! -x "$script" ]]; then
       echo "$script must exist and be executable"
+      exit 1
+    fi
+
+    if [[ -n "$(file "$script" | grep CRLF)" ]]; then
+      echo "----------------------------------------"
+      echo "$script must not have CRLF line endings"
+      echo "  Use git clone with --config core.autocrlf=input"
+      echo "  Set editor to use Unix line endings (e.g. set ff and ffs in vim)"
+      echo "----------------------------------------"
       exit 1
     fi
 
