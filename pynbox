@@ -9,21 +9,22 @@ UPLOAD_REPO="s3://grist-pynbox/packages"
 DOCKER_IMAGE=pynbox-webports
 DOCKER_CONTAINER=pynbox-webports1
 
-USAGE="Usage: $0 [-h] [-v] {install|build|upload} [options]
+USAGE="Usage: $0 [-h] [-v] {install|build|upload} [args]
 
 COMMANDS:
-  install <dest> <what> ... Install a pynbox component.
-  build <what> ...          Build a pynbox component from source.
-  upload <what> ...         Upload a build pynbox component to online repo.
-  startdocker               Start docker container (done by 'build' if needed).
-  stopdocker                Stop docker container, to clean up after building.
+  install <dest> <pkg>[=VER] ...  Install a pynbox component; allows optional =VER suffixes.
+  build <pkg> ...                 Build a pynbox component from source.
+  upload <pkg> ...                Upload a build pynbox component to online repo.
+  startdocker                     Start docker container (done by 'build' if needed).
+  stopdocker                      Stop docker container, to clean up after building.
 
 OPTIONS:
-  <what>          The component to build or install, which may be:
-                    'trusted'     The trusted part of the sandbox code.
-                    'python2'     Python2 sandboxed interpreter and core modules.
-                    'python3'     Python3 sandboxed interpreter and core modules.
-                    <module>      Any Python module available in the repo.
+  <pkg>           The package to build or install, which may be:
+                    'sandbox_outer' The trusted (host) part of the sandbox code.
+                    'sandbox_inner' The inner part of the sandbox code.
+                    'python'        Python2 sandboxed interpreter and core modules.
+                    'python3'       Python3 sandboxed interpreter and core modules.
+                    <module>        Any Python module available in the repo.
   <dest>          [for install] Destination directory for the install.
   --repo SOURCES  [for install] Search for built components in the given sources, which are a
                   comma-separated list of directories of URLs (the latter must start with
@@ -86,8 +87,16 @@ do_install() {
   local dest=$1
   shift
   mkdir -p "$dest"
-  for package in "$@"; do
-    local archive=build/packages/${package}.tbz2
+  for package_ver in "$@"; do
+    if [[ "$package_ver" == *=* ]]; then
+      local package=${package_ver%%=*}
+      local version=${package_ver/*=}
+    else
+      local package="$package_ver"
+      local script=packages/${package}.create.sh
+      local version="$($script --version)"
+    fi
+    local archive=build/packages/${package}.${version}.tbz2
     echo "Installing $archive into $dest"
     tar -C $dest -jxf $archive
   done
