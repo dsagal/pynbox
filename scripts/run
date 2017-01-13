@@ -3,6 +3,8 @@
 BIN_DIR="$(dirname $BASH_SOURCE[0])"
 RUN_DIR="$(dirname $BIN_DIR)"
 
+cd "$RUN_DIR"
+
 # If no -l or -v option is specified for sel_ldr, silence the log by default.
 SILENCE_LOG="-l /dev/null"
 
@@ -14,9 +16,22 @@ while getopts ":h:r:w:i:f:l:m:E:v" opt; do
   esac
 done
 
-SEL_LDR_FLAGS=${@:1:$((OPTIND-1))}
+LAST_SL_ARG=$((OPTIND-1))
+if [[ "${!LAST_SL_ARG}" == "--" ]]; then
+  LAST_SL_ARG=$((LAST_SL_ARG-1))
+fi
+
+SEL_LDR_FLAGS=${@:1:$LAST_SL_ARG}
 ARGS=("${@:$OPTIND}")
 
+if [[ ${#ARGS[@]} -eq 0 ]]; then
+  echo "Usage: $0 [options] program args..."
+  echo "  Program must be within the sandbox root of $RUN_DIR/root."
+  echo
+  exec bin/sel_ldr -?
+fi
+
+
 # Change to the directory of the script, which should be the build directory.
-cd "$RUN_DIR"
+echo bin/sel_ldr -m root -B lib/irt_core.nexe $SEL_LDR_FLAGS $SILENCE_LOG lib/runnable-ld.so --library-path /slib "${ARGS[@]}"
 exec bin/sel_ldr -m root -B lib/irt_core.nexe $SEL_LDR_FLAGS $SILENCE_LOG lib/runnable-ld.so --library-path /slib "${ARGS[@]}"
