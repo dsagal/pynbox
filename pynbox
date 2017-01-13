@@ -178,22 +178,46 @@ do_stopdocker() {
   fi
 }
 
+check_upload_exists() {
+  local dest="$UPLOAD_REPO/$(basename $1)"
+  if [[ "$UPLOAD_REPO" == s3:/* ]]; then
+    aws --profile pynbox s3 ls "$dest" > /dev/null
+  else
+    [[ -e "$dest" ]]
+  fi
+}
+
+
 upload_file() {
   local path="$1"
+  local basename="$(basename $path)"
+  local dest="$UPLOAD_REPO/$basename"
 
   if [[ "$UPLOAD_REPO" == s3:/* ]]; then
-    aws --profile pynbox s3 cp "$path" "$UPLOAD_REPO/" ||
+    aws --profile pynbox s3 cp "$path" "$dest" ||
       ( echo "To upload to S3, you must have 'aws' client installed, and ";
         echo "suitable credential configured for profile 'pynbox'";
         exit 1 )
   else
     mkdir -p $UPLOAD_REPO
-    cp -v "$path" $UPLOAD_REPO/
+    cp -v "$path" "$dest"
   fi
 }
 
 do_upload() {
   if [[ $# -lt 1 ]]; then usage_exit; fi
+
+  for package in "$@"; do
+    local script=packages/${package}.create.sh
+    local version="$($script --version)"
+    if check_upload_exists ${package}.${version}.tbz2 ; then
+      echo "Package $UPLOAD_REPO/${package}.${version}.tbz2 already exists."
+      echo "To update a new version, update VERSION in $script."
+      echo "To replace this version in the repo, remove the package from the repo first."
+      exit 1
+    fi
+  done
+
   for package in "$@"; do
     local script=packages/${package}.create.sh
     local version="$($script --version)"
