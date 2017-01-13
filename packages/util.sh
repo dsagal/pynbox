@@ -7,7 +7,7 @@ set -e -u
 
 if [[ $# -eq 0 ]]; then
   echo "This is intended to be used by the pynbox script, not called directly"
-  echo "Usage: $0 DEST_DIR"
+  echo "Usage: $0 DEST_ARCHIVE"
   echo "  or:  $0 --version"
   exit 1
 fi
@@ -17,10 +17,9 @@ if [[ "$1" == '--version' ]]; then
   exit
 fi
 
-DEST_DIR=$1
+DEST_ARCHIVE="$1"
 SCRIPT_NAME="$(basename $0)"
 PACKAGE=${SCRIPT_NAME%%.*}
-DEST_ARCHIVE=$DEST_DIR/${PACKAGE}.${VERSION}.tbz2
 
 # Create a temporary staging directory, and remove it when this script exits.
 WORK_DIR=`pwd`
@@ -64,7 +63,7 @@ strip_binaries_and_libs() {
 # Usage: create_archive <DIR_RELATIVE_TO_STAGE_DIR> (normally root/)
 create_archive() {
   echo "Creating archive $DEST_ARCHIVE"
-  mkdir -p $DEST_DIR
+  mkdir -p "$(dirname $DEST_ARCHIVE)"
   tar -jcf $DEST_ARCHIVE -C $STAGE_DIR "$@"
 }
 

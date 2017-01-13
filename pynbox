@@ -132,7 +132,8 @@ do_build() {
     echo "Building $package"
     echo "----------------------------------------"
     local script=packages/${package}.create.sh
-    local target=build/packages/${package}.tbz2
+    local version="$($script --version)"
+    local target=build/packages/${package}.${version}.tbz2
 
     do_startdocker
 
@@ -148,10 +149,10 @@ do_build() {
 
     echo "Using container $DOCKER_CONTAINER to build $package"
     if [[ "$package" == "sandbox_outer" ]]; then
-      $script build/packages
+      $script $target
     else
-      docker exec $DOCKER_CONTAINER "/host/$script" /build/packages
-      docker cp $DOCKER_CONTAINER:/build/packages/${package}.tbz2 build/packages/
+      docker exec $DOCKER_CONTAINER "/host/$script" /$target
+      docker cp $DOCKER_CONTAINER:/$target $target
     fi
     if [[ -e $target ]]; then
       echo "Built $target"
