@@ -150,9 +150,6 @@ do_build() {
     if [[ "$package" == "sandbox_outer" ]]; then
       $script build/packages
     else
-      if [[ "$package" != "sandbox_inner" ]]; then
-        docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc build "$package"
-      fi
       docker exec $DOCKER_CONTAINER "/host/$script" /build/packages
       docker cp $DOCKER_CONTAINER:/build/packages/${package}.tbz2 build/packages/
     fi

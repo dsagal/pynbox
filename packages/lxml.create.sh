@@ -3,6 +3,9 @@
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 
+echo "Building $PACKAGE"
+bin/webports -v -V -t glibc build "$PACKAGE"
+
 extract libxml2_2.9.4
 extract libxslt_1.1.29
 extract zlib_1.2.8

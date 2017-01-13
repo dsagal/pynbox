@@ -3,6 +3,9 @@
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 
+echo "Building $PACKAGE"
+bin/webports -v -V -t glibc build "$PACKAGE"
+
 extract corelibs_0.2
 extract gtest_1.7.0+
 extract ncurses_5.9
