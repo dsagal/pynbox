@@ -43,7 +43,6 @@ trap 'echo "Exiting on interrupt"; exit 1' INT
 ACTION=
 SOURCES=
 VERBOSE=
-DEST_URL=
 
 usage_exit() {
   echo "$USAGE"
@@ -64,7 +63,7 @@ process_options() {
         shift
         ;;
       --dest)
-        DEST_URL="$2"
+        UPLOAD_REPO="$2"
         shift
         ;;
       -h|--help|-*)
@@ -184,12 +183,19 @@ do_stopdocker() {
 do_upload() {
   if [[ $# -lt 1 ]]; then usage_exit; fi
   version=$(git describe --tags)
-  for package in "$@"; do
-    aws --profile pynbox s3 cp build/packages/${package}.tbz2 $UPLOAD_REPO/$version/${package}.tbz2 ||
-      ( echo "To upload to S3, you must have 'aws' client installed, and ";
-        echo "suitable credential configured for profile 'pynbox'";
-        exit 1 )
-  done
+  if [[ "$UPLOAD_REPO" == s3:/* ]]; then
+    for package in "$@"; do
+        aws --profile pynbox s3 cp build/packages/${package}.tbz2 $UPLOAD_REPO/$version/${package}.tbz2 ||
+          ( echo "To upload to S3, you must have 'aws' client installed, and ";
+            echo "suitable credential configured for profile 'pynbox'";
+            exit 1 )
+    done
+  else
+    mkdir -p $UPLOAD_REPO/$version
+    for package in "$@"; do
+      cp -v build/packages/${package}.tbz2 $UPLOAD_REPO/$version/
+    done
+  fi
 }
 
 do_$ACTION ${ARGS[@]}
