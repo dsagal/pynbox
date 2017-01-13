@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# The version should include the underlying software version, plus a suffix for build differences.
+VERSION=3.6.0a
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 

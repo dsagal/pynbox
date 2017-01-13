@@ -5,10 +5,22 @@
 
 set -e -u
 
+if [[ $# -eq 0 ]]; then
+  echo "This is intended to be used by the pynbox script, not called directly"
+  echo "Usage: $0 DEST_DIR"
+  echo "  or:  $0 --version"
+  exit 1
+fi
+
+if [[ "$1" == '--version' ]]; then
+  echo $VERSION
+  exit
+fi
+
 DEST_DIR=$1
 SCRIPT_NAME="$(basename $0)"
 PACKAGE=${SCRIPT_NAME%%.*}
-DEST_ARCHIVE=$DEST_DIR/${PACKAGE}.tbz2
+DEST_ARCHIVE=$DEST_DIR/${PACKAGE}.${VERSION}.tbz2
 
 # Create a temporary staging directory, and remove it when this script exits.
 WORK_DIR=`pwd`

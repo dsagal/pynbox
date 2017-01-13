@@ -1,9 +1,11 @@
 #!/bin/bash
 
+# The version should include the underlying software version, plus a suffix for build differences.
+VERSION=2.7.11a
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 
-echo "Building $PACKAGE"
+echo "Building $PACKAGE.$VERSION"
 bin/webports -v -V -t glibc build "$PACKAGE"
 
 extract corelibs_0.2
