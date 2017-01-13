@@ -4,7 +4,7 @@
 # requiring unsandboxed Python just for the installation.
 
 DEFAULT_REPO="build/outputs,https://pynbox.org/repo"
-UPLOAD_REPO="https://pynbox.org/repo"
+UPLOAD_REPO="s3://grist-pynbox"
 
 DOCKER_IMAGE=pynbox-webports
 DOCKER_CONTAINER=pynbox-webports1
@@ -12,11 +12,11 @@ DOCKER_CONTAINER=pynbox-webports1
 USAGE="Usage: $0 [-h] [-v] {install|build|upload} [options]
 
 COMMANDS:
-  install <dest> <what>   Install a pynbox component.
-  build <what>            Build a pynbox component from source.
-  upload <what>           Upload a build pynbox component to online repo.
-  startdocker             Start docker container (done by 'build' if needed).
-  stopdocker              Stop docker container, to clean up after building.
+  install <dest> <what> ... Install a pynbox component.
+  build <what> ...          Build a pynbox component from source.
+  upload <what> ...         Upload a build pynbox component to online repo.
+  startdocker               Start docker container (done by 'build' if needed).
+  stopdocker                Stop docker container, to clean up after building.
 
 OPTIONS:
   <what>          The component to build or install, which may be:
@@ -83,13 +83,15 @@ process_options() {
 process_options "$@"
 
 do_install() {
-  if [[ $# != 2 ]]; then usage_exit; fi
+  if [[ $# -lt 2 ]]; then usage_exit; fi
   local dest=$1
-  local package=build/packages/${2}.tbz2
-
-  echo "Installing $package into $dest"
+  shift
   mkdir -p "$dest"
-  tar -C $dest -jxf $package
+  for package in "$@"; do
+    local archive=build/packages/${package}.tbz2
+    echo "Installing $archive into $dest"
+    tar -C $dest -jxf $archive
+  done
 }
 
 # Outputs "running" if running, something else otherwise.
@@ -125,38 +127,43 @@ do_startdocker() {
 }
 
 do_build() {
-  if [[ $# != 1 ]]; then usage_exit; fi
-  local script=packages/${1}.create.sh
-  local target=build/packages/${1}.tbz2
+  if [[ $# -lt 1 ]]; then usage_exit; fi
+  for package in "$@"; do
+    echo "----------------------------------------"
+    echo "Building $package"
+    echo "----------------------------------------"
+    local script=packages/${package}.create.sh
+    local target=build/packages/${package}.tbz2
 
-  do_startdocker
+    do_startdocker
 
-  if [[ ! -x "$script" ]]; then
-    echo "$script must exist and be executable"
-    exit 1
-  fi
-
-  if [[ -e $target ]]; then
-    echo "Removing previous version of $target"
-    rm $target
-  fi
-
-  echo "Using container $DOCKER_CONTAINER to build $1"
-  if [[ "$1" == "sandbox_outer" ]]; then
-    $script build/packages
-  else
-    if [[ "$1" != "sandbox_inner" ]]; then
-      docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc build "$1"
+    if [[ ! -x "$script" ]]; then
+      echo "$script must exist and be executable"
+      exit 1
     fi
-    docker exec $DOCKER_CONTAINER "/host/$script" /build/packages
-    docker cp $DOCKER_CONTAINER:/build/packages/${1}.tbz2 build/packages/
-  fi
-  if [[ -e $target ]]; then
-    echo "Built $target"
-  else
-    echo "Expected $target to be built, but it wasn't!"
-    exit 1
-  fi
+
+    if [[ -e $target ]]; then
+      echo "Removing previous version of $target"
+      rm $target
+    fi
+
+    echo "Using container $DOCKER_CONTAINER to build $package"
+    if [[ "$package" == "sandbox_outer" ]]; then
+      $script build/packages
+    else
+      if [[ "$package" != "sandbox_inner" ]]; then
+        docker exec $DOCKER_CONTAINER bin/webports -v -V -t glibc build "$package"
+      fi
+      docker exec $DOCKER_CONTAINER "/host/$script" /build/packages
+      docker cp $DOCKER_CONTAINER:/build/packages/${package}.tbz2 build/packages/
+    fi
+    if [[ -e $target ]]; then
+      echo "Built $target"
+    else
+      echo "Expected $target to be built, but it wasn't!"
+      exit 1
+    fi
+  done
 }
 
 do_stopdocker() {
@@ -175,8 +182,14 @@ do_stopdocker() {
 }
 
 do_upload() {
-  if [[ $# != 1 ]]; then usage_exit; fi
-  echo UPLOAD $1
+  if [[ $# -lt 1 ]]; then usage_exit; fi
+  version=$(git describe --tags)
+  for package in "$@"; do
+    aws --profile pynbox s3 cp build/packages/${package}.tbz2 $UPLOAD_REPO/$version/${package}.tbz2 ||
+      ( echo "To upload to S3, you must have 'aws' client installed, and ";
+        echo "suitable credential configured for profile 'pynbox'";
+        exit 1 )
+  done
 }
 
 do_$ACTION ${ARGS[@]}
