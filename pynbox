@@ -4,7 +4,7 @@
 # requiring unsandboxed Python just for the installation.
 
 DEFAULT_REPO="build/outputs,https://pynbox.org/repo"
-UPLOAD_REPO="s3://grist-pynbox"
+UPLOAD_REPO="s3://grist-pynbox/packages"
 
 DOCKER_IMAGE=pynbox-webports
 DOCKER_CONTAINER=pynbox-webports1
@@ -178,22 +178,27 @@ do_stopdocker() {
   fi
 }
 
+upload_file() {
+  local path="$1"
+
+  if [[ "$UPLOAD_REPO" == s3:/* ]]; then
+    aws --profile pynbox s3 cp "$path" "$UPLOAD_REPO/" ||
+      ( echo "To upload to S3, you must have 'aws' client installed, and ";
+        echo "suitable credential configured for profile 'pynbox'";
+        exit 1 )
+  else
+    mkdir -p $UPLOAD_REPO
+    cp -v "$path" $UPLOAD_REPO/
+  fi
+}
+
 do_upload() {
   if [[ $# -lt 1 ]]; then usage_exit; fi
-  version=$(git describe --tags)
-  if [[ "$UPLOAD_REPO" == s3:/* ]]; then
-    for package in "$@"; do
-        aws --profile pynbox s3 cp build/packages/${package}.tbz2 $UPLOAD_REPO/$version/${package}.tbz2 ||
-          ( echo "To upload to S3, you must have 'aws' client installed, and ";
-            echo "suitable credential configured for profile 'pynbox'";
-            exit 1 )
-    done
-  else
-    mkdir -p $UPLOAD_REPO/$version
-    for package in "$@"; do
-      cp -v build/packages/${package}.tbz2 $UPLOAD_REPO/$version/
-    done
-  fi
+  for package in "$@"; do
+    local script=packages/${package}.create.sh
+    local version="$($script --version)"
+    upload_file build/packages/${package}.${version}.tbz2
+  done
 }
 
 do_$ACTION ${ARGS[@]}
