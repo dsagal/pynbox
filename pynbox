@@ -87,7 +87,18 @@ do_install() {
   local dest=$1
   shift
   mkdir -p "$dest"
-  for package_ver in "$@"; do
+
+  ARGS=("$@")
+
+  # Always install sandbox_outer and sandbox_inner, since the sandbox is useless without those.
+  if [[ ! " ${ARGS[@]} " =~ " sandbox_inner " ]]; then
+    ARGS=(sandbox_inner "${ARGS[@]}")
+  fi
+  if [[ ! " ${ARGS[@]} " =~ " sandbox_outer " ]]; then
+    ARGS=(sandbox_outer "${ARGS[@]}")
+  fi
+
+  for package_ver in "${ARGS[@]}"; do
     if [[ "$package_ver" == *=* ]]; then
       local package=${package_ver%%=*}
       local version=${package_ver/*=}
@@ -96,9 +107,15 @@ do_install() {
       local script=packages/${package}.create.sh
       local version="$($script --version)"
     fi
-    local archive=build/packages/${package}.${version}.tbz2
-    echo "Installing $archive into $dest"
-    tar -C $dest -jxf $archive
+    if [[ "$(cat $dest/packages/${package}.installed 2>/dev/null )" == "$version" ]]; then
+      echo "Skipping already installed package ${package}.${version} in $dest"
+    else
+      local archive=build/packages/${package}.${version}.tbz2
+      echo "Installing $archive into $dest"
+      tar -C $dest -jxf $archive
+      mkdir -p "$dest/packages"
+      echo "$version" > "$dest/packages/${package}.installed"
+    fi
   done
 }
 
