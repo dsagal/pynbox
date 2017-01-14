@@ -5,34 +5,63 @@ VERSION="2017-01-13a"
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 
+
 # Change to the directory of this script, and get the absolute path to it.
 CHECKOUT_DIR="$(pwd)"
 BUILD_DIR="$CHECKOUT_DIR/build"
 
 NACL_SRC_BRANCH=readonly_mount
 ARCHD=x86-64
-if [ `uname -s` = "Darwin" ]; then
+if [[ "$OS" == "Windows_NT" ]]; then
+  OS_TYPE=win
+elif [[ `uname -s` = "Darwin" ]]; then
   OS_TYPE=mac
-elif [ `uname -s` = 'Linux' ]; then
+elif [[ `uname -s` = 'Linux' ]]; then
   OS_TYPE=linux
 else
-  OS_TYPE=unknown
+  OS_TYPE=host
 fi
 
 
-#----------------------------------------------------------------------
-# Fetch Google's depot_tools, used to check out native_client from source.
-# See http://dev.chromium.org/developers/how-tos/depottools
-#----------------------------------------------------------------------
-echo "*** Fetching depot_tools"
+if [[ "$OS_TYPE" == "win" ]] ; then
+  #----------------------------------------------------------------------
+  # Building on windows requires some preliminary setup, which isn't automated here.
+  # Try to detect it and print what to do.
+  #----------------------------------------------------------------------
+  WINDOWS_NEEDS_SETUP=0
+  if ! which gclient >/dev/null 2>&1 ; then
+    WINDOWS_NEEDS_SETUP=1
+  else
+    DEPOT_TOOLS_PATH="$(dirname "$(which gclient)")"
+    if [[ ! -e "$DEPOT_TOOLS_PATH/python.bat" ]]; then
+      WINDOWS_NEEDS_SETUP=1
+    fi
+  fi
+  if [[ "$WINDOWS_NEEDS_SETUP" == 1 ]]; then
+    echo "    ********************"
+    echo "    Windows environment does not seem correctly set up."
+    echo "    Follow full directions in goo.gl/3jemcG"
+    echo "    for 'Visual Studio' and 'Install depot_tools'"
+    echo "    ********************"
+    exit 1
+  fi
 
-DEPOT_TOOLS_PATH=$BUILD_DIR/depot_tools
-if [[ ! -d "$DEPOT_TOOLS_PATH" ]]; then
-  git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "$DEPOT_TOOLS_PATH"
+else
+  #----------------------------------------------------------------------
+  # Fetch Google's depot_tools, used to check out native_client from source.
+  # See http://dev.chromium.org/developers/how-tos/depottools
+  #----------------------------------------------------------------------
+  echo "*** Fetching depot_tools"
+
+  DEPOT_TOOLS_PATH=$BUILD_DIR/depot_tools
+  if [[ ! -d "$DEPOT_TOOLS_PATH" ]]; then
+    git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "$DEPOT_TOOLS_PATH"
+  fi
+
+  # All we need to do to use them is make them accessible in PATH.
+  export PATH=$DEPOT_TOOLS_PATH:$PATH
+
 fi
-
-# All we need to do to use them is make them accessible in PATH.
-export PATH=$DEPOT_TOOLS_PATH:$PATH
 
 
 #----------------------------------------------------------------------
@@ -73,7 +102,19 @@ git -C $NACL_DIR pull
 # Build from source Native Client's sel_ldr, the stand-alone "Secure ELF Loader"
 #----------------------------------------------------------------------
 echo "*** Building native_client's sel_ldr"
-$NACL_DIR/scons -C "$NACL_DIR" platform=$ARCHD --mode="opt-$OS_TYPE" sel_ldr
+
+sysrun() {
+  if [[ "$OS_TYPE" == "win" ]] ; then
+    # See http://stackoverflow.com/a/15335686
+    set -x
+    cmd //C call "$VS140COMNTOOLS\\..\\..\\VC\\bin\\amd64\\vcvars64.bat" "&&" "$@"
+    #cmd //C call "$VS140COMNTOOLS\\vsvars32.bat" "&&" "$@"
+  else
+    "$@"
+  fi
+}
+
+sysrun $NACL_DIR/scons --verbose -C "$NACL_DIR" platform=$ARCHD --mode="opt-$OS_TYPE" sel_ldr
 NACL_BUILD_RESULTS=$NACL_DIR/scons-out/opt-$OS_TYPE-$ARCHD/staging
 
 # Also build and run tests. This is just to check that the native_client repository has the
@@ -81,7 +122,7 @@ NACL_BUILD_RESULTS=$NACL_DIR/scons-out/opt-$OS_TYPE-$ARCHD/staging
 if [[ 1 -eq 0 ]]; then
   echo "*** Building and running some native_client tests"
   NACL_SRC_TESTS="run_limited_file_access_test run_limited_file_access_ro_test"
-  $NACL_DIR/scons -C "$NACL_DIR" platform=$ARCHD $NACL_SRC_TESTS
+  sysrun $NACL_DIR/scons --verbose -C "$NACL_DIR" platform=$ARCHD $NACL_SRC_TESTS
 fi
 
 #----------------------------------------------------------------------

@@ -192,7 +192,7 @@ do_build() {
 
     echo "Using container $DOCKER_CONTAINER to build $package"
     if [[ "$package" == "sandbox_outer" ]]; then
-      $script $target
+      env --unset=MSYS_NO_PATHCONV $script $target
     else
       docker exec $DOCKER_CONTAINER "/host/$script" /$target
       docker cp $DOCKER_CONTAINER:/$target $target
