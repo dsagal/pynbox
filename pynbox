@@ -176,7 +176,7 @@ do_build() {
       exit 1
     fi
 
-    if [[ -n "$(file "$script" | grep CRLF)" ]]; then
+    if [[ -n "$(file "$script" | grep CRLF || true)" ]]; then
       echo "----------------------------------------"
       echo "$script must not have CRLF line endings"
       echo "  Use git clone with --config core.autocrlf=input"
@@ -192,7 +192,7 @@ do_build() {
 
     echo "Using container $DOCKER_CONTAINER to build $package"
     if [[ "$package" == "sandbox_outer" ]]; then
-      env --unset=MSYS_NO_PATHCONV $script $target
+      env -u MSYS_NO_PATHCONV $script $target
     else
       docker exec $DOCKER_CONTAINER "/host/$script" /$target
       docker cp $DOCKER_CONTAINER:/$target $target
