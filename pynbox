@@ -3,7 +3,7 @@
 # This is written in bash so that it's possible to use pynbox to install sandboxed Python without
 # requiring unsandboxed Python just for the installation.
 
-DEFAULT_REPO="build/outputs,https://pynbox.org/repo"
+INSTALL_REPO="https://s3.amazonaws.com/grist-pynbox/packages"
 UPLOAD_REPO="s3://grist-pynbox/packages"
 
 DOCKER_IMAGE=pynbox-webports
@@ -28,7 +28,7 @@ OPTIONS:
   <dest>          [for install] Destination directory for the install.
   --repo SOURCES  [for install] Search for built components in the given sources, which are a
                   comma-separated list of directories of URLs (the latter must start with
-                  http:// or https://). By default, searches $DEFAULT_REPO
+                  http:// or https://). By default, searches $INSTALL_REPO
   —-dest REPO-URL [for upload] The repository to upload it to. By default, $UPLOAD_REPO
   -h, --help      Display this help and exit.
   -v, --verbose   Be more verbose.
@@ -42,7 +42,6 @@ trap 'echo Error in line "${BASH_SOURCE}":"${LINENO}"; exit 1' ERR
 trap 'echo "Exiting on interrupt"; exit 1' INT
 
 ACTION=
-SOURCES=
 VERBOSE=
 
 usage_exit() {
@@ -60,7 +59,7 @@ process_options() {
         ACTION="$1"
         ;;
       --repo)
-        SOURCES="$2"
+        INSTALL_REPO="$2"
         shift
         ;;
       --dest)
@@ -111,6 +110,13 @@ do_install() {
       echo "Skipping already installed package ${package}.${version} in $dest"
     else
       local archive=build/packages/${package}.${version}.tbz2
+      if [[ ! -e "$archive" ]]; then
+        local url="$INSTALL_REPO/${package}.${version}.tbz2"
+        echo "Fetching $url"
+        curl -L -f -# -o "${archive}.part" "$url"
+        mv "${archive}.part" "$archive"
+      fi
+
       echo "Installing $archive into $dest"
       tar -C $dest -jxf $archive
       mkdir -p "$dest/packages"
