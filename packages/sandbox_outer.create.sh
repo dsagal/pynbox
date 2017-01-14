@@ -1,7 +1,17 @@
 #!/bin/bash
 
+if [[ "$OS" == "Windows_NT" ]]; then
+  OS_TYPE=win
+elif [[ `uname -s` = "Darwin" ]]; then
+  OS_TYPE=mac
+elif [[ `uname -s` = 'Linux' ]]; then
+  OS_TYPE=linux
+else
+  OS_TYPE=host
+fi
+
 # The version should include the underlying software version, plus a suffix for build differences.
-VERSION="2017-01-13a"
+VERSION="2017-01-13a.${OS_TYPE}"
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 
@@ -12,15 +22,6 @@ BUILD_DIR="$CHECKOUT_DIR/build"
 
 NACL_SRC_BRANCH=readonly_mount
 ARCHD=x86-64
-if [[ "$OS" == "Windows_NT" ]]; then
-  OS_TYPE=win
-elif [[ `uname -s` = "Darwin" ]]; then
-  OS_TYPE=mac
-elif [[ `uname -s` = 'Linux' ]]; then
-  OS_TYPE=linux
-else
-  OS_TYPE=host
-fi
 
 
 if [[ "$OS_TYPE" == "win" ]] ; then
@@ -132,9 +133,10 @@ fi
 echo "*** Preparing files to package"
 mkdir -p $STAGE_DIR/bin
 
-copy_file $NACL_BUILD_RESULTS/sel_ldr         $STAGE_DIR/bin/
-copy_file $CHECKOUT_DIR/scripts/run           $STAGE_DIR/bin/
-copy_file $CHECKOUT_DIR/scripts/nacl_python2  $STAGE_DIR/bin/
+# rsync might not be present on Windows, so copy files without using copy_file function.
+cp -f $NACL_BUILD_RESULTS/sel_ldr         $STAGE_DIR/bin/
+cp -f $CHECKOUT_DIR/scripts/run           $STAGE_DIR/bin/
+cp -f $CHECKOUT_DIR/scripts/nacl_python2  $STAGE_DIR/bin/
 #copy_file $CHECKOUT_DIR/scripts/nacl_python3  $STAGE_DIR/bin/
 
 create_archive bin/
