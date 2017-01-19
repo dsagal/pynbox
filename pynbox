@@ -169,8 +169,6 @@ do_build() {
     local version="$($script --version)"
     local target=build/packages/${package}.${version}.tbz2
 
-    do_startdocker
-
     if [[ ! -x "$script" ]]; then
       echo "$script must exist and be executable"
       exit 1
@@ -194,6 +192,8 @@ do_build() {
     if [[ "$package" == "sandbox_outer" ]]; then
       env -u MSYS_NO_PATHCONV $script $target
     else
+      do_startdocker
+
       docker exec $DOCKER_CONTAINER "/host/$script" /$target
       docker cp $DOCKER_CONTAINER:/$target $target
     fi
