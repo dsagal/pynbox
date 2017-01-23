@@ -9,6 +9,8 @@ UPLOAD_REPO="s3://grist-pynbox/packages"
 DOCKER_IMAGE=pynbox-webports
 DOCKER_CONTAINER=pynbox-webports1
 
+DIR="$(dirname $BASH_SOURCE[0])"
+
 USAGE="Usage: $0 [-h] [-v] {install|build|upload} [args]
 
 COMMANDS:
@@ -100,19 +102,22 @@ do_install() {
     ARGS=(sandbox_outer "${ARGS[@]}")
   fi
 
+  # Make sure the build directory exists.
+  mkdir -p "$DIR/build/packages"
+
   for package_ver in "${ARGS[@]}"; do
     if [[ "$package_ver" == *=* ]]; then
       local package=${package_ver%%=*}
       local version=${package_ver/*=}
     else
       local package="$package_ver"
-      local script=packages/${package}.create.sh
+      local script="$DIR/packages/${package}.create.sh"
       local version="$($script --version)"
     fi
     if [[ "$(cat $dest/packages/${package}.installed 2>/dev/null )" == "$version" ]]; then
       echo "Skipping already installed package ${package}.${version} in $dest"
     else
-      local archive=build/packages/${package}.${version}.tbz2
+      local archive="$DIR/build/packages/${package}.${version}.tbz2"
       if [[ ! -e "$archive" ]]; then
         local url="$INSTALL_REPO/${package}.${version}.tbz2"
         echo "Fetching $url"
@@ -165,9 +170,9 @@ do_build() {
     echo "----------------------------------------"
     echo "Building $package"
     echo "----------------------------------------"
-    local script=packages/${package}.create.sh
+    local script="$DIR/packages/${package}.create.sh"
     local version="$($script --version)"
-    local target=build/packages/${package}.${version}.tbz2
+    local target="$DIR/build/packages/${package}.${version}.tbz2"
 
     if [[ ! -x "$script" ]]; then
       echo "$script must exist and be executable"
@@ -187,6 +192,9 @@ do_build() {
       echo "Removing previous version of $target"
       rm $target
     fi
+
+    # Make sure the build directory exists.
+    mkdir -p "$DIR/build/packages"
 
     echo "Using container $DOCKER_CONTAINER to build $package"
     if [[ "$package" == "sandbox_outer" ]]; then
@@ -251,7 +259,7 @@ do_upload() {
   if [[ $# -lt 1 ]]; then usage_exit; fi
 
   for package in "$@"; do
-    local script=packages/${package}.create.sh
+    local script="$DIR/packages/${package}.create.sh"
     local version="$($script --version)"
     if check_upload_exists ${package}.${version}.tbz2 ; then
       echo "Package $UPLOAD_REPO/${package}.${version}.tbz2 already exists."
@@ -262,9 +270,9 @@ do_upload() {
   done
 
   for package in "$@"; do
-    local script=packages/${package}.create.sh
+    local script="$DIR/packages/${package}.create.sh"
     local version="$($script --version)"
-    upload_file build/packages/${package}.${version}.tbz2
+    upload_file "$DIR/build/packages/${package}.${version}.tbz2"
   done
 }
 

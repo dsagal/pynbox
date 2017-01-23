@@ -17,7 +17,7 @@ source $DIR/util.sh
 
 
 # Change to the directory of this script, and get the absolute path to it.
-CHECKOUT_DIR="$(pwd)"
+CHECKOUT_DIR="$(dirname "$DIR")"
 BUILD_DIR="$CHECKOUT_DIR/build"
 
 NACL_SRC_BRANCH=windows_mount
@@ -60,7 +60,7 @@ else
   fi
 
   # All we need to do to use them is make them accessible in PATH.
-  export PATH=$DEPOT_TOOLS_PATH:$PATH
+  export PATH=`pwd`/$DEPOT_TOOLS_PATH:$PATH
 
 fi
 
