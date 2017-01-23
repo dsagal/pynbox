@@ -11,7 +11,7 @@ else
 fi
 
 # The version should include the underlying software version, plus a suffix for build differences.
-VERSION="2017-01-13a.${OS_TYPE}"
+VERSION="2017-01-23a.${OS_TYPE}"
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 
@@ -20,7 +20,7 @@ source $DIR/util.sh
 CHECKOUT_DIR="$(pwd)"
 BUILD_DIR="$CHECKOUT_DIR/build"
 
-NACL_SRC_BRANCH=readonly_mount
+NACL_SRC_BRANCH=windows_mount
 ARCHD=x86-64
 
 
@@ -71,13 +71,13 @@ fi
 #----------------------------------------------------------------------
 echo "*** Fetching native_client source code"
 NACL_DIR="$BUILD_DIR/nacl/native_client"
+NACL_ROOT="$(dirname $NACL_DIR)"
 if [[ ! -d "$NACL_DIR" ]]; then
-  mkdir -p `dirname $NACL_DIR`
-  pushd `dirname $NACL_DIR`
-    # This line would fetch the official nacl. We do a little hacking to
-    # fetch from our own repository copy that has additional changes.
-    #run $DEPOT_TOOLS_PATH/fetch.py --no-history nacl
-    cat >> .gclient <<EOF
+  mkdir -p "$NACL_ROOT"
+  # This line would fetch the official nacl. We do a little hacking to
+  # fetch from our own repository copy that has additional changes.
+  #run $DEPOT_TOOLS_PATH/fetch.py --no-history nacl
+  cat >> "$NACL_ROOT/.gclient" <<EOF
 solutions = [
 {
 "managed": False,
@@ -89,14 +89,16 @@ solutions = [
 },
 ]
 EOF
-    echo "*** Running gclient sync"
-    gclient sync
-  popd
 fi
 
+pushd "$NACL_ROOT"
+  echo "*** Running gclient sync"
+  gclient sync
+popd
+
 echo "*** Checking out branch '$NACL_SRC_BRANCH'"
+git -C $NACL_DIR fetch
 git -C $NACL_DIR checkout "$NACL_SRC_BRANCH"
-git -C $NACL_DIR pull
 
 
 #----------------------------------------------------------------------
