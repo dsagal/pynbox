@@ -11,7 +11,7 @@ else
 fi
 
 # The version should include the underlying software version, plus a suffix for build differences.
-VERSION="2017-01-23a.${OS_TYPE}"
+VERSION="2017-01-24a.${OS_TYPE}"
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 
@@ -138,7 +138,5 @@ mkdir -p $STAGE_DIR/bin
 # rsync might not be present on Windows, so copy files without using copy_file function.
 cp -f $NACL_BUILD_RESULTS/sel_ldr         $STAGE_DIR/bin/
 cp -f $CHECKOUT_DIR/scripts/run           $STAGE_DIR/bin/
-cp -f $CHECKOUT_DIR/scripts/nacl_python2  $STAGE_DIR/bin/
-#copy_file $CHECKOUT_DIR/scripts/nacl_python3  $STAGE_DIR/bin/
 
 create_archive bin/
