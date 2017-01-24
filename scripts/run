@@ -2,36 +2,50 @@
 
 BIN_DIR="$(dirname $BASH_SOURCE[0])"
 RUN_DIR="$(dirname $BIN_DIR)"
-
-cd "$RUN_DIR"
+SEL_LDR="$RUN_DIR/bin/sel_ldr"
+LIB="$RUN_DIR/lib"
 
 # If no -l or -v option is specified for sel_ldr, silence the log by default.
 SILENCE_LOG="-l /dev/null"
+
+# The default mount point for the sandbox if nothing else is specified.
+DEFAULT_MOUNT=(-m "$RUN_DIR/root:/:ro")
 
 # Scan options recognized by sel_ldr (we only need to list those that take an
 # argument).
 while getopts ":h:r:w:i:f:l:m:E:v" opt; do
   case "$opt" in
-    l|v) SILENCE_LOG="";;
+    l|v)  SILENCE_LOG="" ;;
+    m)    DEFAULT_MOUNT=() ;;
   esac
 done
 
-LAST_SL_ARG=$((OPTIND-1))
-if [[ "${!LAST_SL_ARG}" == "--" ]]; then
-  LAST_SL_ARG=$((LAST_SL_ARG-1))
-fi
+SEL_LDR_FLAGS=("${@:1:$((OPTIND-1))}")
+PROGRAM=${@:$OPTIND:1}
+ARGS=("${@:$((OPTIND+1))}")
 
-SEL_LDR_FLAGS=${@:1:$LAST_SL_ARG}
-ARGS=("${@:$OPTIND}")
-
-if [[ ${#ARGS[@]} -eq 0 ]]; then
+if [[ -z "$PROGRAM" ]]; then
   echo "Usage: $0 [options] program args..."
-  echo "  Program must be within the sandbox root of $RUN_DIR/root."
+  echo "  The default mount, if no -m option is given, is $DEFAULT_MOUNT."
+  echo "  Program can be 'python' or a path within the mounted filesystem."
+  echo "  If VERBOSE environment variable is set, will print sel_ldr command."
   echo
-  exec bin/sel_ldr -?
+  exec "$SEL_LDR" -?
 fi
 
+# Allow 'python' as the program, for convenience.
+if [ "$PROGRAM" = "python" ]; then
+  PROGRAM=/python/bin/python2.7.nexe
+  if [[ ${#ARGS[@]} -eq 0 ]]; then
+    # Sandboxed python doesn't detect if it has a tty, so if called without arguments (for
+    # interactive REPL), add an explicit flag to make it interactive.
+    ARGS=(-i)
+  fi
+fi
 
-# Change to the directory of the script, which should be the build directory.
-echo bin/sel_ldr -m root -B lib/irt_core.nexe $SEL_LDR_FLAGS $SILENCE_LOG lib/runnable-ld.so --library-path /slib "${ARGS[@]}"
-exec bin/sel_ldr -m root -B lib/irt_core.nexe $SEL_LDR_FLAGS $SILENCE_LOG lib/runnable-ld.so --library-path /slib "${ARGS[@]}"
+# Run the actual command via the sel_ldr loader.
+CMD=("$SEL_LDR" -B "$LIB/irt_core.nexe" "${DEFAULT_MOUNT[@]}" "${SEL_LDR_FLAGS[@]}" $SILENCE_LOG "$LIB/runnable-ld.so" --library-path /slib "$PROGRAM" "${ARGS[@]}")
+if [[ -n "$VERBOSE" ]]; then
+  echo "${CMD[@]}"
+fi
+exec "${CMD[@]}"
