@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -eu
+
+BIN_DIR="$(dirname $BASH_SOURCE[0])"
+RUN_DIR="$(dirname $BIN_DIR)"
+$BIN_DIR/run -m $RUN_DIR/root/:/:ro /test/test_pynbox_native.nexe
+$BIN_DIR/run -m $RUN_DIR/root/:/:rw python /test/test_pynbox_python.py -v
+echo "All passed"

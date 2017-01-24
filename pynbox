@@ -170,7 +170,8 @@ do_build() {
     echo "----------------------------------------"
     echo "Building $package"
     echo "----------------------------------------"
-    local script="$DIR/packages/${package}.create.sh"
+    local rel_script="packages/${package}.create.sh"
+    local script="$DIR/$rel_script"
     local version="$($script --version)"
     local target="$DIR/build/packages/${package}.${version}.tbz2"
 
@@ -202,7 +203,7 @@ do_build() {
     else
       do_startdocker
 
-      docker exec $DOCKER_CONTAINER "/host/$script" /$target
+      docker exec $DOCKER_CONTAINER "/host/$rel_script" /$target
       docker cp $DOCKER_CONTAINER:/$target $target
     fi
     if [[ -e $target ]]; then
