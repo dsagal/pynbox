@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The version should include the underlying software version, plus a suffix for build differences.
-VERSION=2.7.11a
+VERSION=2.7.11b
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 
@@ -57,6 +57,8 @@ copy_dir  $PAYLOAD/lib/python2.7/hotshot       $PYROOT/lib/python2.7/
 copy_dir  $PAYLOAD/lib/python2.7/compiler      $PYROOT/lib/python2.7/
 copy_dir  --exclude 'tests/' \
           $PAYLOAD/lib/python2.7/json          $PYROOT/lib/python2.7/
+copy_dir  --exclude 'tests/' --exclude '*.exe' \
+          $PAYLOAD/lib/python2.7/distutils     $PYROOT/lib/python2.7/
 
 # Include the necessary shared libraries.
 #   This command shows the shared libraries that a binary or library requires:
