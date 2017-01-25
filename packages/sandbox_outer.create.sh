@@ -11,7 +11,7 @@ else
 fi
 
 # The version should include the underlying software version, plus a suffix for build differences.
-VERSION="2017-01-24a.${OS_TYPE}"
+VERSION="2017-01-24b.${OS_TYPE}"
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 
@@ -108,16 +108,19 @@ echo "*** Building native_client's sel_ldr"
 
 sysrun() {
   if [[ "$OS_TYPE" == "win" ]] ; then
-    # See http://stackoverflow.com/a/15335686
-    set -x
-    cmd //C call "$VS140COMNTOOLS\\..\\..\\VC\\bin\\amd64\\vcvars64.bat" "&&" "$@"
-    #cmd //C call "$VS140COMNTOOLS\\vsvars32.bat" "&&" "$@"
+    local args=("$@")
+    # Replace slashes with backslashes.
+    args=("${args[@]//\//\\}")
+
+    # See http://stackoverflow.com/a/15335686 for this way to set Visual Studio
+    # environment before running the command.
+    cmd //C call "$VS140COMNTOOLS\\..\\..\\VC\\bin\\amd64\\vcvars64.bat" "&&" "${args[@]}"
   else
     "$@"
   fi
 }
 
-sysrun $NACL_DIR/scons --verbose -C "$NACL_DIR" platform=$ARCHD --mode="opt-$OS_TYPE" sel_ldr
+sysrun $NACL_DIR/scons -C "$NACL_DIR" platform=$ARCHD --mode="opt-$OS_TYPE" sel_ldr
 NACL_BUILD_RESULTS=$NACL_DIR/scons-out/opt-$OS_TYPE-$ARCHD/staging
 
 # Also build and run tests. This is just to check that the native_client repository has the

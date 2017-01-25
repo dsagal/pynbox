@@ -1,12 +1,18 @@
 #!/bin/bash
 
+export MSYS_NO_PATHCONV=1
+
 BIN_DIR="$(dirname $BASH_SOURCE[0])"
 RUN_DIR="$(dirname $BIN_DIR)"
 SEL_LDR="$RUN_DIR/bin/sel_ldr"
 LIB="$RUN_DIR/lib"
 
 # If no -l or -v option is specified for sel_ldr, silence the log by default.
-SILENCE_LOG="-l /dev/null"
+if [[ "$OS" == "Windows_NT" ]]; then
+  SILENCE_LOG="-l NUL"
+else
+  SILENCE_LOG="-l /dev/null"
+fi
 
 # The default mount point for the sandbox if nothing else is specified.
 DEFAULT_MOUNT=(-m "$RUN_DIR/root:/:ro")
