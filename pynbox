@@ -204,10 +204,10 @@ do_build() {
     # Make sure the build directory exists.
     mkdir -p "$DIR/build/packages"
 
-    echo "Using container $DOCKER_CONTAINER to build $package"
     if [[ "$package" == "sandbox_outer" ]]; then
       env -u MSYS_NO_PATHCONV $script $target
     else
+      echo "Using container $DOCKER_CONTAINER to build $package"
       do_startdocker
 
       docker exec $DOCKER_CONTAINER "/host/$rel_script" /$target

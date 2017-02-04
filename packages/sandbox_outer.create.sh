@@ -91,10 +91,13 @@ solutions = [
 EOF
 fi
 
-pushd "$NACL_ROOT"
-  echo "*** Running gclient sync"
-  gclient sync
-popd
+# While developing, you can set GCLIENT_SYNC=no to skip this slow step.
+if [[ "${GCLIENT_SYNC:-yes}" != "no" ]]; then
+  pushd "$NACL_ROOT"
+    echo "*** Running gclient sync"
+    cmd //C gclient sync
+  popd
+fi
 
 echo "*** Checking out branch '$NACL_SRC_BRANCH'"
 git -C $NACL_DIR fetch
@@ -114,13 +117,13 @@ sysrun() {
 
     # See http://stackoverflow.com/a/15335686 for this way to set Visual Studio
     # environment before running the command.
-    cmd //C call "$VS140COMNTOOLS\\..\\..\\VC\\bin\\amd64\\vcvars64.bat" "&&" "${args[@]}"
+    cmd //C call "$VS120COMNTOOLS/../../VC/vcvarsall.bat" "amd64" "&&" "${args[@]}"
   else
     "$@"
   fi
 }
 
-sysrun $NACL_DIR/scons -C "$NACL_DIR" platform=$ARCHD --mode="opt-$OS_TYPE" sel_ldr
+sysrun python $NACL_DIR/scons.py -C "$NACL_DIR" platform=$ARCHD --mode="opt-$OS_TYPE" sel_ldr
 NACL_BUILD_RESULTS=$NACL_DIR/scons-out/opt-$OS_TYPE-$ARCHD/staging
 
 # Also build and run tests. This is just to check that the native_client repository has the
@@ -128,7 +131,7 @@ NACL_BUILD_RESULTS=$NACL_DIR/scons-out/opt-$OS_TYPE-$ARCHD/staging
 if [[ 1 -eq 0 ]]; then
   echo "*** Building and running some native_client tests"
   NACL_SRC_TESTS="run_limited_file_access_test run_limited_file_access_ro_test"
-  sysrun $NACL_DIR/scons --verbose -C "$NACL_DIR" platform=$ARCHD $NACL_SRC_TESTS
+  sysrun python $NACL_DIR/scons.py -C "$NACL_DIR" platform=$ARCHD $NACL_SRC_TESTS
 fi
 
 #----------------------------------------------------------------------
