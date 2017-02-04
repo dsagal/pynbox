@@ -28,9 +28,8 @@ OPTIONS:
                     'python3'       Python3 sandboxed interpreter and core modules.
                     <module>        Any Python module available in the repo.
   <dest>          [for install] Destination directory for the install.
-  --repo SOURCES  [for install] Search for built components in the given sources, which are a
-                  comma-separated list of directories of URLs (the latter must start with
-                  http:// or https://). By default, searches $INSTALL_REPO
+  --repo REPO     [for install] Search for built components in the given repo, which is a
+                  directory or a URL. By default, searches $INSTALL_REPO
   —-dest REPO-URL [for upload] The repository to upload it to. By default, $UPLOAD_REPO
   -h, --help      Display this help and exit.
   -v, --verbose   Be more verbose.
@@ -95,10 +94,10 @@ do_install() {
   ARGS=("$@")
 
   # Always install sandbox_outer and sandbox_inner, since the sandbox is useless without those.
-  if [[ ! " ${ARGS[@]} " =~ " sandbox_inner " ]]; then
+  if [[ ! " ${ARGS[@]} " =~ " "sandbox_inner[=\ ] ]]; then
     ARGS=(sandbox_inner "${ARGS[@]}")
   fi
-  if [[ ! " ${ARGS[@]} " =~ " sandbox_outer " ]]; then
+  if [[ ! " ${ARGS[@]} " =~ " "sandbox_outer[=\ ] ]]; then
     ARGS=(sandbox_outer "${ARGS[@]}")
   fi
 
@@ -117,12 +116,20 @@ do_install() {
     if [[ "$(cat $dest/packages/${package}.installed 2>/dev/null )" == "$version" ]]; then
       echo "Skipping already installed package ${package}.${version} in $dest"
     else
-      local archive="$DIR/build/packages/${package}.${version}.tbz2"
+      local src="$INSTALL_REPO/${package}.${version}.tbz2"
+      local archive="$src"
       if [[ ! -e "$archive" ]]; then
-        local url="$INSTALL_REPO/${package}.${version}.tbz2"
-        echo "Fetching $url"
-        curl -L -f -# -o "${archive}.part" "$url"
-        mv "${archive}.part" "$archive"
+        archive="$DIR/build/packages/${package}.${version}.tbz2"
+        if [[ ! -e "$archive" && "$src" =~ ^https?://  ]]; then
+          echo "Fetching $src"
+          if curl -L -f -# -o "${archive}.part" "$src" ; then
+            mv "${archive}.part" "$archive"
+          fi
+        fi
+        if [[ ! -e "$archive" ]]; then
+          echo "Unable to find package $src"
+          exit 1
+        fi
       fi
 
       echo "Installing $archive into $dest"
