@@ -266,6 +266,7 @@ upload_file() {
 do_upload() {
   if [[ $# -lt 1 ]]; then usage_exit; fi
 
+  unset MSYS_NO_PATHCONV
   for package in "$@"; do
     local script="$DIR/packages/${package}.create.sh"
     local version="$($script --version)"
@@ -282,6 +283,7 @@ do_upload() {
     local version="$($script --version)"
     upload_file "$DIR/build/packages/${package}.${version}.tbz2"
   done
+  export MSYS_NO_PATHCONV=1
 }
 
 do_$ACTION ${ARGS[@]}
