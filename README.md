@@ -1,41 +1,83 @@
 Python NativeClient Sandbox (pynbox)
 ====================================
 
-The project helps build a version of Python that runs
-in NaCl (NativeClient) sandbox. Most OS operations are unavailable, and access
-to the filesystem is limited to a specified directory (similar to chroot).
+The project helps build a version of Python that runs in NaCl (NativeClient)
+sandbox. Most OS operations are unavailable, and access to the filesystem is
+limited to the specified directories (similar to chroot or docker mounts).
 
-Security is a major focus of NativeClient. It allows safely executing untrusted code, including the Python interpreter, and all Python code running in it, including native Python modules.
+Security is a major focus of NativeClient. It allows safely executing untrusted code, in this case the Python interpreter, and all Python code running in it, including native Python modules.
 
-This project combines existing pieces to make this easy to set up.
+This project make this easy to set up.
 
 Quick Start
 -----------
-```bash
-./build.sh
-```
-This fetches and builds the necessary software, and populates the `./build/` directory, including `./build/root/`, which serves as the filesystem root within the sandbox.
+
+To use the pre-built sandbox, clone the project, pick a destination directory, and run `pynbox install`:
 
 ```bash
-./build/run python -c 'print "Hello world"'
-./build/run python test/test_nacl.py
-./build/run test/test_hello.nexe
+git clone https://github.com/dsagal/pynbox.git
+./pynbox install DEST python tests
+DEST/bin/test_pynbox
 ```
-Note that to run any python program, that program and all the modules it requires must be placed somewhere under `./build/root/`.
+
+This installs the packages containing the sandbox, the Python 2.7 interpreter, and a test, and runs the test. If the output ends with "All passed", then things are good. If not, please open an issue.
+
+You can now run Python in a sandbox:
 
 ```bash
-./build.sh install lxml
+DEST/bin/run python -c 'import os; print os.listdir("/")'
+>>> ['python', 'slib', 'test']
 ```
-Build and install python package `lxml`.
 
-Most non-binary packages can be installed using pip (without a need for webports), e.g.
+By default, the Python code only has read-only access to `DEST/root`. It can't see anything else.
+
+Giving more access
+------------------
+
+To allow the sandboxed code to interact with the outside world, `DEST/bin/run` supports a number of options:
+
 ```bash
-pip install -t build/root/python/lib/python2.7/site-packages/ messytables
+DEST/bin/run
 ```
-If this installs a dependency with a binary component, it will not work. The test run by `./build.sh`
-may then fail and indicate the package that can't be imported.
 
-Background
+shows all available flags.
+
+To give the script access to other directories in the filesystem, or to give it
+read-write access, use the `-m <host_dir>:<virt_dir>:<ro|rw>` option. It mounts
+the directory `<host_dir>` (on your machine) under the virtual paths
+`<virt_dir>` where it will be seen by the sandbox. The suffix of `ro` or `rw`
+determines whether to mount the directory as read-only or read-write. (If
+you've used Docker, you might recognize this option as similar to Docker's `-v`
+option.)
+
+The other connection to the outside world are the standard streams (stdin,
+stdout, sterr) and file descriptos which you can redirect using `-h`, `-r`, and
+`-w` options to `DEST/bin/run`.
+
+What you can do with those is up to you. For example, you can run code inside and outside of the sandbox, which sets ups RPC using forwarded file descriptors.
+
+
+Building packages from source
+-----------------------------
+
+Prerequisites:
+- At this time only x86-64 CPU architecture is supported (NaCl
+  supports more, but you'll have to edit pynbox scripts to make get it to work).
+- Building packages internal to the sandbox, which is everything except
+  `sandbox_outer` does NOT depend on the OS, only on the architecture. Pynbox
+  builds them using Docker, to ensure a consistent environment.
+- Building `sandbox_outer` produces a package specific to the current OS.
+
+The following command builds all the packages we support at the moment.
+
+```bash
+./pynbox build sandbox_inner sandbox_outer python lxml tests
+```
+
+Note that `lxml` is an example of a native (binary) Python module. Most Python modules do not require building, but only need to be placed somewhere under `DEST/root`, to be visible inside the sandbox.
+
+
+NaCl Background
 ----------
 
 [NativeClient](https://developer.chrome.com/native-client) (or NaCl, and a
@@ -70,33 +112,21 @@ chroot). If populated with all the modules and libraries that Python need, this
 offers a way to run Python with that directory as the
 filesystem root.
 
-What's included
-----------------
-
-`./build.sh` script takes care of fetching the needed software, patching what's
-needed, building, and installing files. The script's code is the primary
-documentation. The script supports some options, available using `./build.sh
--h`.
-
-Some tests are included and are run by `build.sh`.
-
-You can build a webport of a python package and install into the `./build/` directory using `./build.sh install <package>`, e.g.
-```bash
-./build.sh install lxml
-```
-
-The software it includes is `depot_tools`, `nacl_sdk`, `webports` (specifically
-Python and its dependencies), and optionally NaCl source code.
-
-The output it produces is in the `./build/` directory. It also prepares
-`./build/root/` to serve as the filesystem root for the sandbox. A
-script `./build/run` helps run binaries in the sandbox, with `./build/run python`
-running the Python interpreter in the sandbox.
-
 Notes
 -----
-NativeClient encompasses PNaCl (portable native client) and just NaCl. These differ in toolchains used to build code, and produce .pexe and .nexe files respectively. The idea is that .nexe is architecture-specific, and .pexe is more portable: it can be translated to a suitable .nexe file on the fly.
+NativeClient encompasses PNaCl (portable native client) and just NaCl. These
+differ in toolchains used to build code, and produce .pexe and .nexe files
+respectively. The idea is that .nexe is architecture-specific, and .pexe is
+more portable: it can be translated to a suitable .nexe file on the fly.
 
-There is a hitch, however: shared libraries are only supported by the glibc toolchain which builds architecture-specific .nexe files directly. We need shared libraries, in particular, to allow Python to load C extension modules.
+There is a hitch, however: shared libraries are only supported by the glibc
+toolchain which builds architecture-specific .nexe files directly. We need
+shared libraries, in particular, to allow Python to load C extension modules
+(including some standard ones).
 
-Loading shared libraries uses "libdl.so" library. This library isn't part of NativeClient source. It is downloaded as part of an architecture specific tgz archive (for each architecture). It seems to have some bugs (or super-weird behavior), in particular opening "/lib/foo" translates to "/foo", while "/./lib/foo" works. This is special for the "/lib" path, so we avoid it by putting libraries under "/slib".
+Loading shared libraries uses "libdl.so" library. This library isn't part of
+NativeClient source. It is downloaded as part of an architecture specific tgz
+archive (for each architecture). It seems to have some bugs (or super-weird
+behavior), in particular opening "/lib/foo" translates to "/foo", while
+"/./lib/foo" works. This is special for the "/lib" path, so we avoid it by
+putting libraries under "/slib".
