@@ -11,7 +11,7 @@ else
 fi
 
 # The version should include the underlying software version, plus a suffix for build differences.
-VERSION="2017-02-04a.${OS_TYPE}"
+VERSION="2017-02-10a.${OS_TYPE}"
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 
