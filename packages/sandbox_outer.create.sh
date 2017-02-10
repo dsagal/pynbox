@@ -91,24 +91,6 @@ solutions = [
 EOF
 fi
 
-# While developing, you can set GCLIENT_SYNC=no to skip this slow step.
-if [[ "${GCLIENT_SYNC:-yes}" != "no" ]]; then
-  pushd "$NACL_ROOT"
-    echo "*** Running gclient sync"
-    cmd //C gclient sync
-  popd
-fi
-
-echo "*** Checking out branch '$NACL_SRC_BRANCH'"
-git -C $NACL_DIR fetch
-git -C $NACL_DIR checkout "$NACL_SRC_BRANCH"
-
-
-#----------------------------------------------------------------------
-# Build from source Native Client's sel_ldr, the stand-alone "Secure ELF Loader"
-#----------------------------------------------------------------------
-echo "*** Building native_client's sel_ldr"
-
 sysrun() {
   if [[ "$OS_TYPE" == "win" ]] ; then
     local args=("$@")
@@ -122,6 +104,24 @@ sysrun() {
     "$@"
   fi
 }
+
+# While developing, you can set GCLIENT_SYNC=no to skip this slow step.
+if [[ "${GCLIENT_SYNC:-yes}" != "no" ]]; then
+  pushd "$NACL_ROOT"
+    echo "*** Running gclient sync"
+    sysrun gclient sync
+  popd
+fi
+
+echo "*** Checking out branch '$NACL_SRC_BRANCH'"
+git -C $NACL_DIR fetch
+git -C $NACL_DIR checkout "$NACL_SRC_BRANCH"
+
+
+#----------------------------------------------------------------------
+# Build from source Native Client's sel_ldr, the stand-alone "Secure ELF Loader"
+#----------------------------------------------------------------------
+echo "*** Building native_client's sel_ldr"
 
 sysrun python $NACL_DIR/scons.py -C "$NACL_DIR" platform=$ARCHD --mode="opt-$OS_TYPE" sel_ldr
 NACL_BUILD_RESULTS=$NACL_DIR/scons-out/opt-$OS_TYPE-$ARCHD/staging
