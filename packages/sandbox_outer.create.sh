@@ -116,6 +116,7 @@ fi
 echo "*** Checking out branch '$NACL_SRC_BRANCH'"
 git -C $NACL_DIR fetch
 git -C $NACL_DIR checkout "$NACL_SRC_BRANCH"
+git -C $NACL_DIR merge --ff-only
 
 
 #----------------------------------------------------------------------
