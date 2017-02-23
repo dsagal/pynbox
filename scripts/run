@@ -32,7 +32,7 @@ ARGS=("${@:$((OPTIND+1))}")
 
 if [[ -z "$PROGRAM" ]]; then
   echo "Usage: $0 [options] program args..."
-  echo "  The default mount, if no -m option is given, is $DEFAULT_MOUNT."
+  echo "  The default mount, if no -m option is given, is ${DEFAULT_MOUNT[@]}."
   echo "  Program can be 'python' or a path within the mounted filesystem."
   echo "  If VERBOSE environment variable is set, will print sel_ldr command."
   echo

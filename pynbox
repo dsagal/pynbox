@@ -25,7 +25,6 @@ OPTIONS:
                     'sandbox_outer' The trusted (host) part of the sandbox code.
                     'sandbox_inner' The inner part of the sandbox code.
                     'python'        Python2 sandboxed interpreter and core modules.
-                    'python3'       Python3 sandboxed interpreter and core modules.
                     <module>        Any Python module available in the repo.
   <dest>          [for install] Destination directory for the install.
   --repo REPO     [for install] Search for built components in the given repo, which is a
