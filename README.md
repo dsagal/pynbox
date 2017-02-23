@@ -25,7 +25,10 @@ To use the pre-built sandbox, clone the project, pick a destination directory `D
 
 ```bash
 git clone https://github.com/dsagal/pynbox.git
+
+cd pynbox
 ./pynbox install DEST_DIR python tests
+
 DEST_DIR/bin/test_pynbox
 ```
 
@@ -62,8 +65,7 @@ you've used Docker, this option is similar to Docker's `-v`.)
 
 Another connection to the outside world is the standard streams (stdin, stdout, sterr) and
 additional file descriptors which you can redirect using `-h`, `-r`, and `-w` options to
-`DEST_DIR/bin/run`. (On Windows, these options can only be used directly with `sel_ldr` rather than
-the bash script `DEST_DIR/bin/run`.
+`DEST_DIR/bin/run`.
 
 What you can do with those is up to you. For example, you can run code inside and outside of the
 sandbox, which sets ups RPC using forwarded file descriptors.
@@ -108,6 +110,10 @@ Prerequisites:
 - Docker for building OS-independent packages (all internal packages, i.e. all other than
   `sandbox_outer`). These packages can be used with any OS.
 - Bash is required. On Windows, it is tested with Bash that comes with [Git](https://git-scm.com/download/win).
+- On Windows, Visual Studio 2013 (vs120) is required, available
+  [here](https://www.visualstudio.com/en-us/news/releasenotes/vs2013-community-vs) (no need to
+  select any options), because nacl's scons build script fails to detect the presence of the newer
+  VS 2015 version.
 
 The following command builds all the packages we support at the moment.
 
@@ -122,7 +128,7 @@ inside the sandbox.
 ### Managing the Docker build
 
 Packages internal to the sandbox are OS-independent, and built using Docker. These are known as
-"webports". When running `./pynbox build` to build them, it automatically builds a Docker image
+"webports". When running `./pynbox build` to build them, it automatically creates a Docker image
 named `pynbox-webports` and runs it as a Docker container named `pynbox-webports1`. It then
 executes commands within that Docker container.
 
@@ -162,7 +168,8 @@ installations will skip it. To force a reinstall, remove the "install receipt" f
 (e.g. by adding `-dev1` suffix) in `./packages/PACKAGE.create.sh`.
 
 You may place your built packages in a separate directory (or online at some URL), and you'll then
-be able to install from there by using `./pynbox install --repo REPO` option.
+be able to install from there by using `./pynbox install --repo REPO` option. This allows you to
+build webports packages on one OS, and use the built packages on other OS's.
 
 
 <a name="background"/>
@@ -213,12 +220,13 @@ toolchain which builds architecture-specific .nexe files directly. We need
 shared libraries, in particular, to allow Python to load C extension modules
 (including a number of standard modules).
 
-Loading shared libraries uses "libdl.so" library. This library isn't part of
+Note: Loading shared libraries uses "libdl.so" library. This library isn't part of
 NativeClient source. It is downloaded as part of an architecture specific tgz
 archive (for each architecture). It seems to have some bugs (or super-weird
 behavior), in particular opening "/lib/foo" translates to "/foo", while
 "/./lib/foo" works. This is special for the "/lib" path, so we avoid the bug in
-pynbox setup by putting libraries under "/slib" inside the sandbox.
+pynbox setup by placing libraries in the sandbox under "/slib" instead of "/lib".
+
 
 <a name="security"/>
 Security Considerations
@@ -232,7 +240,7 @@ also published a paper about it:
 [Native Client: A Sandbox for Portable, Untrusted x86 Code](https://research.google.com/pubs/archive/34913.pdf) (PDF). Another analysys by Chris Rohlf is available here: [Analysis Of A Secure Browser Plugin Sandbox](https://media.blackhat.com/bh-us-12/Briefings/Rohlf/BH_US_12_Rohlf_Google_Native_Client_WP.pdf) (PDF).
 
 Overall, the security approach of NativeClient relies on verifying instructions, preventing new
-unverified instructions from being created at runtime, verifying (at runtime) that all jumps land
+unverified instructions from being created at runtime, verifying that all jumps land
 on verified addresses, and providing a suite of build tools that produce code that can pass these
 verifications. The build tools themselves aren't trusted: the verifications happen at load time
 and run time.
@@ -241,8 +249,9 @@ There is other trusted code that implements allowed system calls and other commu
 the sandbox and the outside world.
 
 The design is robust and powerful, but bugs will exist as anywhere, and these can cause
-vulnerabilities that allow untrusted code to escape the sandbox. This icludes a great discussion
-and lists some examples from a security contest in 2009: [Security Implications](https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2009/august/the-security-implications-of-google-native-client/).
+vulnerabilities that allow untrusted code to escape the sandbox. This post includes a great
+discussion and lists some examples from a security contest in 2009: [Security
+Implications](https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2009/august/the-security-implications-of-google-native-client/).
 
 So the biggest risk to NativeClient's security is if it is little-used, and nobody spends the time
 to discover and fix vulnerabilities.
@@ -263,7 +272,8 @@ tested than those parts of NativeClient codebase that are used in Chrome.
 With mounted directories, one area of concern is symlinks. In short, it is recommended to avoid
 symlinks in mounted directories. If you have symlinks in the mounted directories that point
 outside, the trusted code follows them and interprets them as inside the virtual filesystem (e.g.
-`HOST_DIR/foo -> /etc/passwd` would translate to  `HOST_DIR/etc/passwd`). However, there is a race
+`HOST_DIR/foo -> /etc/passwd` would translate to  `HOST_DIR/etc/passwd`). This is good.
+However, there is a race
 condition between this verification and actual operations on the file. If a new symlink is created
 along the resolved path between the resolution and the actual operation, it may allow an escape
 outside of the mounted directories. For this reason, creation of symlinks, and renames of symlinks

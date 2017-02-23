@@ -99,6 +99,8 @@ sysrun() {
 
     # See http://stackoverflow.com/a/15335686 for this way to set Visual Studio
     # environment before running the command.
+    # We require Visual Studio 2013 (VS120) rather than VS 2015 (as recommended by Chromium build
+    # instructions) because nacl's scons doesn't not support VS 2015 (fails to find it).
     cmd //C call "$VS120COMNTOOLS/../../VC/vcvarsall.bat" "amd64" "&&" "${args[@]}"
   else
     "$@"
