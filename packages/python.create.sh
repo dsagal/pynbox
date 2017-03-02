@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The version should include the underlying software version, plus a suffix for build differences.
-VERSION=2.7.11c
+VERSION=2.7.11d
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 

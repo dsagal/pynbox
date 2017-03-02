@@ -45,7 +45,7 @@ ENV SSL32_LDFLAGS '-L/usr/local/ssl/lib'
 
 # NaCl Webports.
 WORKDIR /webports
-RUN gclient config --name=src https://github.com/dsagal/webports.git && gclient sync --revision src@bc27050
+RUN gclient config --name=src https://github.com/dsagal/webports.git && gclient sync --revision src@75dba3c
 
 # Build the webports.
 WORKDIR /webports/src
