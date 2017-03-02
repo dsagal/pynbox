@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The version should include the underlying software version, plus a suffix for build differences.
-VERSION=2.7.11b
+VERSION=2.7.11c
 DIR="$(dirname $BASH_SOURCE[0])"
 source $DIR/util.sh
 
@@ -69,6 +69,7 @@ copy_file $PAYLOAD/lib/libcrypt.so.11835d88    $ROOT/slib/
 copy_file $PAYLOAD/lib/libdl.so.11835d88       $ROOT/slib/
 copy_file $PAYLOAD/lib/libm.so.11835d88        $ROOT/slib/
 copy_file $PAYLOAD/lib/libpthread.so.11835d88  $ROOT/slib/
+copy_file $PAYLOAD/lib/librt.so.11835d88       $ROOT/slib/
 copy_file $PAYLOAD/lib/libutil.so.11835d88     $ROOT/slib/
 
 copy_file $PAYLOAD/lib/libbz2.so.1.0           $ROOT/slib/
