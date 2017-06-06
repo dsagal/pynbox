@@ -17,9 +17,7 @@ The Pynbox project make this functionality easy to set up and use, whether by in
 - [NaCl Background](#background)
 - [Security Considerations](#security)
 
-<a name="quick-start"/>
-Quick Start
------------
+## <a name="quick-start"/> Quick Start
 
 To use the pre-built sandbox, clone the project, pick a destination directory `DEST_DIR`, and run `./pynbox install`:
 
@@ -50,9 +48,7 @@ On Windows, this process is tested with the Bash shell that comes with
 POSIX-like filesystem.
 
 
-<a name="more-access"/>
-More Access
-------------------
+## <a name="more-access"/> More Access
 
 To allow the sandboxed code to interact with the outside world, `DEST_DIR/bin/run` supports a number
 of options, which you can see by running `DEST_DIR/bin/run` with no arguments.
@@ -77,9 +73,8 @@ the underlying `sel_ldr` command line, and execute that command directly, bypass
 script.
 
 
-<a name="pynbox-packages"/>
-Pynbox packages
---------------------------
+## <a name="pynbox-packages"/> Pynbox packages
+
 The `pynbox install` command allows installing several packages. Here's a brief description:
 
 * `sandbox_outer` is always required and automatically added when installing anything. It includes
@@ -99,9 +94,7 @@ The `pynbox install` command allows installing several packages. Here's a brief 
 Note that except for `sandbox_outer`, packages are not OS-specific. However, packages are
 specific to CPU architecture, and currently only x86-64 (aka AMD64) is supported.
 
-<a name="building-from-source"/>
-Building packages from source
------------------------------
+## <a name="building-from-source"/> Building packages from source
 
 Prerequisites:
 - x86-64 (aka AMD64) CPU architecture. This covers most modern machines, including laptops and
@@ -172,9 +165,7 @@ be able to install from there by using `./pynbox install --repo REPO` option. Th
 build webports packages on one OS, and use the built packages on other OS's.
 
 
-<a name="background"/>
-NaCl Background
----------------
+## <a name="background"/> NaCl Background
 
 [NativeClient](https://developer.chrome.com/native-client) (or NaCl, and a
 variant called PNaCl) is a sandbox for running native code in the Google Chrome
@@ -228,9 +219,7 @@ behavior), in particular opening "/lib/foo" translates to "/foo", while
 pynbox setup by placing libraries in the sandbox under "/slib" instead of "/lib".
 
 
-<a name="security"/>
-Security Considerations
------------------------
+## <a name="security"/> Security Considerations
 
 If you are considering sandboxing, then security is important to you.
 
