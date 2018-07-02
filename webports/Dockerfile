@@ -33,6 +33,11 @@ RUN git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 # NaCl SDK
 RUN curl -O -L https://storage.googleapis.com/nativeclient-mirror/nacl/nacl_sdk/nacl_sdk.zip
 RUN unzip nacl_sdk.zip && rm nacl_sdk.zip
+COPY naclsdk_download.patch ./nacl_sdk/naclsdk_download.patch
+# Running anything will update nacl_sdk, then we need to patch it again.
+RUN patch nacl_sdk/sdk_tools/download.py ./nacl_sdk/naclsdk_download.patch && \
+    ./nacl_sdk/naclsdk version && \
+    patch nacl_sdk/sdk_tools/download.py ./nacl_sdk/naclsdk_download.patch
 RUN ./nacl_sdk/naclsdk install pepper_$SDK_VERSION
 
 # 32-bit OpenSSL (needed for python-host, which is needed by Python).
