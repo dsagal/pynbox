@@ -1,6 +1,9 @@
 Python NativeClient Sandbox (pynbox)
 ====================================
 
+> ⚠️ NOTE: This project is no longer active, and the technology it is based on (NativeClient) is [no longer supported](https://developer.chrome.com/docs/native-client/).
+> For alternatives, consider [Pyodide](https://pyodide.org/en/stable/) or [gVisor](https://github.com/google/gvisor#readme).
+
 The project provides a version of Python that runs in the NaCl (NativeClient)
 sandbox. Most OS operations are unavailable, and access to the filesystem is
 limited to the specified directories (similar to chroot or docker mounts).
